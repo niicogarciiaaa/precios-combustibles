@@ -1,0 +1,204 @@
+.tarjeta-gasolinera {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  transition: all 0.3s ease;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  border: 5px solid red !important; // DEBUG: Borde rojo grueso para ver si se renderiza
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+}
+
+.header-tarjeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+
+  .nombre {
+    font-size: 1.3rem;
+    color: #2c3e50;
+    margin: 0;
+    flex: 1;
+  }
+
+  .precio-principal {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 10px 15px;
+    border-radius: 8px;
+    color: white;
+
+    .precio {
+      font-size: 1.8rem;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .unidad {
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+  }
+}
+
+.info-basica {
+  margin-bottom: 15px;
+
+  p {
+    margin: 5px 0;
+    color: #555;
+  }
+
+  .direccion {
+    font-weight: 500;
+    color: #333;
+  }
+
+  .ubicacion {
+    font-size: 0.9rem;
+    color: #777;
+  }
+
+  .distancia {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    
+    strong {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+.acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+
+  button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-detalles {
+    background-color: #3498db;
+    color: white;
+
+    &:hover {
+      background-color: #2980b9;
+    }
+  }
+
+  .btn-maps {
+    background-color: #2ecc71;
+    color: white;
+
+    &:hover {
+      background-color: #27ae60;
+    }
+  }
+}
+
+.detalles {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  animation: slideDown 0.3s ease;
+
+  .seccion-horario {
+    margin-bottom: 20px;
+
+    strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+
+    p {
+      margin: 0;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      color: #555;
+    }
+  }
+
+  .seccion-precios {
+    strong {
+      display: block;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .lista-precios {
+      display: grid;
+      gap: 8px;
+    }
+
+    .precio-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+
+      .tipo {
+        color: #555;
+        font-weight: 500;
+      }
+
+      .valor {
+        color: #667eea;
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-tarjeta {
+    flex-direction: column;
+
+    .precio-principal {
+      align-self: flex-end;
+    }
+  }
+
+  .acciones {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+}

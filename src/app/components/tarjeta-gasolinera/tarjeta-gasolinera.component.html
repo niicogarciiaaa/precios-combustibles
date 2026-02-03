@@ -1,0 +1,71 @@
+<div class="tarjeta-gasolinera">
+  <div class="header-tarjeta">
+    <h3 class="nombre">{{ gasolinera.nombre || 'Sin nombre' }}</h3>
+    <div class="precio-principal">
+      <span class="precio">{{ obtenerPrecioDestacado() | precios }}</span>
+      <span class="unidad">€/L</span>
+    </div>
+  </div>
+
+  <div class="info-basica">
+    <p class="direccion">📍 {{ gasolinera.direccion || 'Sin dirección' }}</p>
+    <p class="ubicacion">{{ gasolinera.localidad }} ({{ gasolinera.provincia }}) - {{ gasolinera.codigoPostal }}</p>
+    <p class="distancia" *ngIf="gasolinera.distancia !== undefined">
+      🚗 <strong>{{ gasolinera.distancia | number:'1.2-2' }} km</strong> de tu ubicación
+    </p>
+  </div>
+
+  <div class="acciones">
+    <button class="btn-detalles" (click)="toggleDetalles()">
+      {{ mostrarDetalles ? '▲ Ocultar' : '▼ Ver más' }} detalles
+    </button>
+    <button class="btn-maps" (click)="abrirMaps()">
+      🗺️ Mapa
+    </button>
+  </div>
+
+  <div class="detalles" *ngIf="mostrarDetalles">
+    <div class="seccion-horario">
+      <strong>Horario:</strong>
+      <p>{{ gasolinera.horario }}</p>
+    </div>
+
+    <div class="seccion-precios">
+      <strong>Todos los precios:</strong>
+      <div class="lista-precios">
+        <div class="precio-item" *ngIf="gasolinera.precios.gasolina95">
+          <span class="tipo">Gasolina 95:</span>
+          <span class="valor">{{ gasolinera.precios.gasolina95 | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.gasolina98">
+          <span class="tipo">Gasolina 98:</span>
+          <span class="valor">{{ gasolinera.precios.gasolina98 | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.diesel">
+          <span class="tipo">Diésel:</span>
+          <span class="valor">{{ gasolinera.precios.diesel | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.dieselPremium">
+          <span class="tipo">Diésel Premium:</span>
+          <span class="valor">{{ gasolinera.precios.dieselPremium | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.glp">
+          <span class="tipo">GLP:</span>
+          <span class="valor">{{ gasolinera.precios.glp | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.gnc">
+          <span class="tipo">GNC:</span>
+          <span class="valor">{{ gasolinera.precios.gnc | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.bioetanol">
+          <span class="tipo">Bioetanol:</span>
+          <span class="valor">{{ gasolinera.precios.bioetanol | precios }} €/L</span>
+        </div>
+        <div class="precio-item" *ngIf="gasolinera.precios.biodiesel">
+          <span class="tipo">Biodiésel:</span>
+          <span class="valor">{{ gasolinera.precios.biodiesel | precios }} €/L</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

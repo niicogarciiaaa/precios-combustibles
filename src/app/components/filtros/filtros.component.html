@@ -1,0 +1,63 @@
+<div class="filtros-container">
+  <h3>🔍 Filtrar gasolineras</h3>
+  
+  <div class="filtros-grid">
+    <div class="filtro-item">
+      <label for="tipoCombustible">Tipo de combustible:</label>
+      <select 
+        id="tipoCombustible" 
+        [(ngModel)]="filtros.tipoCombustible" 
+        (change)="onFiltroChange()">
+        <option *ngFor="let tipo of tiposCombustible" [value]="tipo.value">
+          {{ tipo.label }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filtro-item">
+      <label for="provincia">Provincia:</label>
+      <select 
+        id="provincia" 
+        [(ngModel)]="filtros.provincia" 
+        (change)="onProvinciaChange()">
+        <option value="">Todas las provincias</option>
+        <option *ngFor="let provincia of provincias" [value]="provincia">
+          {{ provincia }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filtro-item">
+      <label for="localidad">Localidad:</label>
+      <select 
+        id="localidad" 
+        [(ngModel)]="filtros.localidad" 
+        (change)="onFiltroChange()"
+        [disabled]="!filtros.provincia">
+        <option value="">Todas las localidades</option>
+        <option *ngFor="let localidad of localidadesFiltradas" [value]="localidad">
+          {{ localidad }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filtro-item">
+      <label for="codigoPostal">Código Postal:</label>
+      <input 
+        type="text" 
+        id="codigoPostal" 
+        [(ngModel)]="filtros.codigoPostal" 
+        (input)="onFiltroChange()"
+        placeholder="Ej: 28001">
+    </div>
+
+    <div class="filtro-item btn-container">
+      <button class="btn-cercanas" (click)="onBuscarCercanas()" [disabled]="buscandoUbicacion">
+        📍 {{ buscandoUbicacion ? 'Obteniendo ubicación...' : 'Buscar cercanas' }}
+      </button>
+      <button class="btn-limpiar" (click)="limpiarFiltros()">
+        🗑️ Limpiar filtros
+      </button>
+    </div>
+  </div>
+</div>

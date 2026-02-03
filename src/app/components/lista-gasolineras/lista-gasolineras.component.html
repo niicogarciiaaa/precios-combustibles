@@ -1,0 +1,51 @@
+<div class="lista-container">
+  <div class="filtros-sticky" *ngIf="!loading">
+    <app-filtros 
+      (filtrosChange)="onFiltrosChange($event)"
+      (buscarCercanas)="buscarCercanas()"
+      [provincias]="provincias"
+      [localidades]="localidades"
+      [todasLasGasolineras]="gasolineras">
+    </app-filtros>
+    
+    <div class="header-lista">
+      <h2>Gasolineras disponibles</h2>
+      <button class="btn-primary" (click)="refrescar()" [disabled]="loading">
+        🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="contenido-scrollable">
+    <div *ngIf="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando datos del MITECO...</p>
+    </div>
+
+    <div *ngIf="error && !loading" class="error">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!loading && gasolinerasFiltradas.length > 0" class="resultados">
+      <p class="contador">
+        Se encontraron <strong>{{ gasolinerasFiltradas.length }}</strong> gasolineras
+      </p>
+
+      <div class="grid-gasolineras">
+        <app-tarjeta-gasolinera 
+          *ngFor="let gasolinera of gasolinerasFiltradas.slice(0, 50); trackBy: trackByFn"
+          [gasolinera]="gasolinera"
+          [combustibleDestacado]="filtros.tipoCombustible">
+        </app-tarjeta-gasolinera>
+      </div>
+
+      <p *ngIf="gasolinerasFiltradas.length > 50" class="aviso-limite">
+        Mostrando las 50 gasolineras más baratas. Usa los filtros para refinar la búsqueda.
+      </p>
+    </div>
+
+    <div *ngIf="!loading && gasolinerasFiltradas.length === 0" class="sin-resultados">
+      No se encontraron gasolineras.
+    </div>
+  </div>
+</div>
