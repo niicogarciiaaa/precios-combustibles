@@ -1,5 +1,5 @@
 .app-container {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -24,8 +24,7 @@
 main {
   flex: 1;
   padding: 30px 20px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  min-height: 0;
 }
 
 .footer {

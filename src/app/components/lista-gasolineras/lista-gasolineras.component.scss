@@ -1,17 +1,13 @@
 .lista-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
 }
 
 .filtros-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 100;
   flex-shrink: 0;
   background-color: #f5f5f5;
   padding: 0 0 10px 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .contenido-scrollable {
@@ -26,14 +22,21 @@
   padding: 20px;
   background-color: white;
   border-bottom: 1px solid #e0e0e0;
+  gap: 15px;
 
   h2 {
     margin: 0;
     font-size: 1.3rem;
+    flex: 1;
   }
 
-  button {
-    height: 44px;
+  .botones-header {
+    display: flex;
+    gap: 10px;
+
+    button {
+      height: 44px;
+    }
   }
 }
 
@@ -78,6 +81,46 @@
     strong {
       color: #667eea;
       font-size: 1.2em;
+    }
+  }
+
+  .seccion-favoritos {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%);
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #ffd700;
+    margin-bottom: 30px;
+
+    h3 {
+      margin: 0 0 20px 0;
+      color: #ff8c00;
+      font-size: 1.3rem;
+      text-align: center;
+    }
+
+    .sin-favoritos {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+      font-size: 1rem;
+    }
+
+    .btn-limpiar-favoritos {
+      display: block;
+      margin-top: 20px;
+      background-color: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: #ff5252;
+        transform: scale(1.02);
+      }
     }
   }
 }

@@ -28,6 +28,12 @@
     font-size: 1.3rem;
     color: #2c3e50;
     margin: 0;
+  }
+
+  .nombre-favorito {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex: 1;
   }
 
@@ -50,6 +56,26 @@
       font-size: 0.85rem;
       opacity: 0.9;
     }
+  }
+}
+
+.btn-favorito {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  color: #d4a574;
+  flex-shrink: 0;
+
+  &:hover {
+    transform: scale(1.2);
+  }
+
+  &.favorito {
+    color: #ffd700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
   }
 }
 

@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
 import { GasolinerasService } from '../../services/gasolineras.service';
+import { FavoritosService } from '../../services/favoritos.service';
 import { GasolineraSimplificada, TipoCombustible } from '../../models/gasolinera.model';
 
 @Component({
@@ -11,12 +12,15 @@ import { GasolineraSimplificada, TipoCombustible } from '../../models/gasolinera
 export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   gasolineras: GasolineraSimplificada[] = [];
   gasolinerasFiltradas: GasolineraSimplificada[] = [];
+  favoritos: GasolineraSimplificada[] = [];
   provincias: string[] = [];
   localidades: string[] = [];
   loading = true;
   error: string | null = null;
   ubicacionUsuario: { lat: number; lng: number } | null = null;
   mostrandoCercanas = false;
+  mostrarFavoritos = false;
+  numeroFavoritos = 0;
   
   filtros = {
     provincia: '',
@@ -38,10 +42,22 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private gasolinerasService: GasolinerasService) {}
+  constructor(
+    private gasolinerasService: GasolinerasService,
+    private favoritosService: FavoritosService
+  ) {}
 
   ngOnInit(): void {
+    // Cargar gasolineras
     this.cargarGasolineras();
+    
+    // Escuchar cambios en favoritos
+    this.favoritosService.getFavoritos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(favoritos => {
+        this.favoritos = favoritos;
+        this.numeroFavoritos = favoritos.length;
+      });
   }
 
   ngOnDestroy(): void {
@@ -117,6 +133,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   onFiltrosChange(filtros: any): void {
     this.filtros = { ...this.filtros, ...filtros };
     this.mostrandoCercanas = false;
+    this.mostrarFavoritos = false;
     this.aplicarFiltros();
   }
 
@@ -198,6 +215,12 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   refrescar(): void {
     this.gasolinerasService.refrescar();
     this.cargarGasolineras();
+  }
+
+  limpiarFavoritos(): void {
+    if (confirm('¿Estás seguro de que quieres eliminar todos los favoritos?')) {
+      this.favoritosService.limpiarFavoritos();
+    }
   }
 
   trackByFn(index: number, item: GasolineraSimplificada): string {

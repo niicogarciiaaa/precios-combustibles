@@ -1,6 +1,14 @@
 <div class="tarjeta-gasolinera">
   <div class="header-tarjeta">
-    <h3 class="nombre">{{ gasolinera.nombre || 'Sin nombre' }}</h3>
+    <div class="nombre-favorito">
+      <h3 class="nombre">{{ gasolinera.nombre || 'Sin nombre' }}</h3>
+      <button class="btn-favorito" 
+              [class.favorito]="esFavorito"
+              (click)="toggleFavorito()"
+              [title]="esFavorito ? 'Eliminar de favoritos' : 'Agregar a favoritos'">
+        {{ esFavorito ? '★' : '☆' }}
+      </button>
+    </div>
     <div class="precio-principal">
       <span class="precio">{{ obtenerPrecioDestacado() | precios }}</span>
       <span class="unidad">€/L</span>

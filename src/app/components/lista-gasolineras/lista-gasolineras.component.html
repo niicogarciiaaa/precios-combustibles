@@ -10,9 +10,16 @@
     
     <div class="header-lista">
       <h2>Gasolineras disponibles</h2>
-      <button class="btn-primary" (click)="refrescar()" [disabled]="loading">
-        🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
-      </button>
+      <div class="botones-header">
+        <button class="btn-secondary" 
+                (click)="mostrarFavoritos = !mostrarFavoritos"
+                [class.activo]="mostrarFavoritos">
+          ★ Favoritos ({{ numeroFavoritos }})
+        </button>
+        <button class="btn-primary" (click)="refrescar()" [disabled]="loading">
+          🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
+        </button>
+      </div>
     </div>
   </div>
 
@@ -27,21 +34,42 @@
     </div>
 
     <div *ngIf="!loading && gasolinerasFiltradas.length > 0" class="resultados">
-      <p class="contador">
-        Se encontraron <strong>{{ gasolinerasFiltradas.length }}</strong> gasolineras
-      </p>
-
-      <div class="grid-gasolineras">
-        <app-tarjeta-gasolinera 
-          *ngFor="let gasolinera of gasolinerasFiltradas.slice(0, 50); trackBy: trackByFn"
-          [gasolinera]="gasolinera"
-          [combustibleDestacado]="filtros.tipoCombustible">
-        </app-tarjeta-gasolinera>
+      <div *ngIf="mostrarFavoritos" class="seccion-favoritos">
+        <h3>⭐ Mis Favoritos</h3>
+        <div *ngIf="favoritos.length === 0" class="sin-favoritos">
+          No hay gasolineras en favoritos. ¡Agrega algunas!
+        </div>
+        <div *ngIf="favoritos.length > 0" class="grid-gasolineras">
+          <app-tarjeta-gasolinera 
+            *ngFor="let gasolinera of favoritos; trackBy: trackByFn"
+            [gasolinera]="gasolinera"
+            [combustibleDestacado]="filtros.tipoCombustible">
+          </app-tarjeta-gasolinera>
+        </div>
+        <button class="btn-limpiar-favoritos" 
+                (click)="limpiarFavoritos()"
+                *ngIf="favoritos.length > 0">
+          🗑️ Limpiar favoritos
+        </button>
       </div>
 
-      <p *ngIf="gasolinerasFiltradas.length > 50" class="aviso-limite">
-        Mostrando las 50 gasolineras más baratas. Usa los filtros para refinar la búsqueda.
-      </p>
+      <div *ngIf="!mostrarFavoritos">
+        <p class="contador">
+          Se encontraron <strong>{{ gasolinerasFiltradas.length }}</strong> gasolineras
+        </p>
+
+        <div class="grid-gasolineras">
+          <app-tarjeta-gasolinera 
+            *ngFor="let gasolinera of gasolinerasFiltradas.slice(0, 50); trackBy: trackByFn"
+            [gasolinera]="gasolinera"
+            [combustibleDestacado]="filtros.tipoCombustible">
+          </app-tarjeta-gasolinera>
+        </div>
+
+        <p *ngIf="gasolinerasFiltradas.length > 50" class="aviso-limite">
+          Mostrando las 50 gasolineras más baratas. Usa los filtros para refinar la búsqueda.
+        </p>
+      </div>
     </div>
 
     <div *ngIf="!loading && gasolinerasFiltradas.length === 0" class="sin-resultados">
