@@ -5,7 +5,7 @@
       (buscarCercanas)="buscarCercanas()"
       [provincias]="provincias"
       [localidades]="localidades"
-      [todasLasGasolineras]="gasolineras">
+      [localidadesPorProvincia]="localidadesPorProvincia">
     </app-filtros>
     
     <div class="header-lista">
@@ -55,19 +55,23 @@
 
       <div *ngIf="!mostrarFavoritos">
         <p class="contador">
-          Se encontraron <strong>{{ gasolinerasFiltradas.length }}</strong> gasolineras
+          Se encontraron <strong>{{ totalResultados }}</strong> gasolineras
+        </p>
+
+        <p *ngIf="cargandoEnSegundoPlano" class="contador-progresivo">
+          Cargando resultados en segundo plano: {{ gasolinerasCargadas | number }} / {{ totalGasolineras | number }}
         </p>
 
         <div class="grid-gasolineras">
           <app-tarjeta-gasolinera 
-            *ngFor="let gasolinera of gasolinerasFiltradas.slice(0, 50); trackBy: trackByFn"
+            *ngFor="let gasolinera of gasolinerasFiltradas; trackBy: trackByFn"
             [gasolinera]="gasolinera"
             [combustibleDestacado]="filtros.tipoCombustible">
           </app-tarjeta-gasolinera>
         </div>
 
-        <p *ngIf="gasolinerasFiltradas.length > 50" class="aviso-limite">
-          Mostrando las 50 gasolineras más baratas. Usa los filtros para refinar la búsqueda.
+        <p *ngIf="totalResultados > maxResultadosVisibles" class="aviso-limite">
+          Mostrando las {{ maxResultadosVisibles }} gasolineras más baratas. Usa los filtros para refinar la búsqueda.
         </p>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, interval, switchMap, shareReplay, startWith } from 'rxjs';
+import { Observable, concat, interval, of, shareReplay, switchMap, tap } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiResponse, Gasolinera, GasolineraSimplificada, PreciosCombustible } from '../models/gasolinera.model';
 
@@ -13,9 +13,14 @@ export class GasolinerasService {
   
   // Intervalo de actualización (5 minutos)
   private readonly REFRESH_INTERVAL = 5 * 60 * 1000;
+
+  // Cache persistente en navegador
+  private readonly CACHE_KEY = 'gasolineras-cache-v1';
+  private readonly CACHE_TIMESTAMP_KEY = 'gasolineras-cache-timestamp-v1';
   
   // Cache observable para evitar peticiones duplicadas
   private gasolineras$: Observable<GasolineraSimplificada[]> | null = null;
+  private timeoutGuardadoCache: number | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -24,12 +29,24 @@ export class GasolinerasService {
    */
   obtenerGasolineras(): Observable<GasolineraSimplificada[]> {
     if (!this.gasolineras$) {
-      this.gasolineras$ = interval(this.REFRESH_INTERVAL).pipe(
-        startWith(0), // Emite inmediatamente
-        switchMap(() => this.fetchGasolineras()),
-        shareReplay(1) // Comparte la última emisión entre suscriptores
-      );
+      const gasolinerasEnCache = this.obtenerGasolinerasDesdeCache();
+
+      if (gasolinerasEnCache) {
+        this.gasolineras$ = concat(
+          of(gasolinerasEnCache),
+          interval(this.REFRESH_INTERVAL).pipe(
+            switchMap(() => this.fetchGasolineras())
+          )
+        ).pipe(
+          shareReplay(1)
+        );
+      } else {
+        this.gasolineras$ = this.fetchGasolineras().pipe(
+          shareReplay(1)
+        );
+      }
     }
+
     return this.gasolineras$;
   }
 
@@ -89,8 +106,20 @@ export class GasolinerasService {
    */
   private fetchGasolineras(): Observable<GasolineraSimplificada[]> {
     return this.http.get<ApiResponse>(this.API_URL).pipe(
-      map(response => this.transformarDatos(response.ListaEESSPrecio))
+      map(response => this.transformarDatos(response.ListaEESSPrecio)),
+      tap(gasolineras => this.programarGuardadoEnCache(gasolineras))
     );
+  }
+
+  private programarGuardadoEnCache(gasolineras: GasolineraSimplificada[]): void {
+    if (this.timeoutGuardadoCache !== null) {
+      window.clearTimeout(this.timeoutGuardadoCache);
+    }
+
+    this.timeoutGuardadoCache = window.setTimeout(() => {
+      this.guardarGasolinerasEnCache(gasolineras);
+      this.timeoutGuardadoCache = null;
+    }, 0);
   }
 
   /**
@@ -139,10 +168,47 @@ export class GasolinerasService {
     return parseFloat(coordenadaLimpia) || 0;
   }
 
+  private obtenerGasolinerasDesdeCache(): GasolineraSimplificada[] | null {
+    try {
+      const cacheSerializada = localStorage.getItem(this.CACHE_KEY);
+      const timestamp = localStorage.getItem(this.CACHE_TIMESTAMP_KEY);
+
+      if (!cacheSerializada || !timestamp) {
+        return null;
+      }
+
+      const cacheSigueViva = Date.now() - Number(timestamp) < this.REFRESH_INTERVAL;
+      if (!cacheSigueViva) {
+        this.limpiarCachePersistente();
+        return null;
+      }
+
+      return JSON.parse(cacheSerializada) as GasolineraSimplificada[];
+    } catch {
+      this.limpiarCachePersistente();
+      return null;
+    }
+  }
+
+  private guardarGasolinerasEnCache(gasolineras: GasolineraSimplificada[]): void {
+    try {
+      localStorage.setItem(this.CACHE_KEY, JSON.stringify(gasolineras));
+      localStorage.setItem(this.CACHE_TIMESTAMP_KEY, Date.now().toString());
+    } catch {
+      this.limpiarCachePersistente();
+    }
+  }
+
+  private limpiarCachePersistente(): void {
+    localStorage.removeItem(this.CACHE_KEY);
+    localStorage.removeItem(this.CACHE_TIMESTAMP_KEY);
+  }
+
   /**
    * Invalida el cache para forzar actualización
    */
   refrescar(): void {
+    this.limpiarCachePersistente();
     this.gasolineras$ = null;
   }
 }

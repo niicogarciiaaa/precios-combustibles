@@ -4,6 +4,11 @@ import { GasolinerasService } from '../../services/gasolineras.service';
 import { FavoritosService } from '../../services/favoritos.service';
 import { GasolineraSimplificada, TipoCombustible } from '../../models/gasolinera.model';
 
+const MAX_RESULTADOS_VISIBLES = 50;
+const CARGA_INICIAL = 500;
+const TAMANO_LOTE = 500;
+const RETARDO_ENTRE_LOTES_MS = 30;
+
 @Component({
   selector: 'app-lista-gasolineras',
   templateUrl: './lista-gasolineras.component.html',
@@ -11,16 +16,23 @@ import { GasolineraSimplificada, TipoCombustible } from '../../models/gasolinera
 })
 export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   gasolineras: GasolineraSimplificada[] = [];
+  private gasolinerasCompletas: GasolineraSimplificada[] = [];
   gasolinerasFiltradas: GasolineraSimplificada[] = [];
   favoritos: GasolineraSimplificada[] = [];
   provincias: string[] = [];
   localidades: string[] = [];
+  localidadesPorProvincia: Record<string, string[]> = {};
   loading = true;
   error: string | null = null;
   ubicacionUsuario: { lat: number; lng: number } | null = null;
   mostrandoCercanas = false;
   mostrarFavoritos = false;
   numeroFavoritos = 0;
+  totalResultados = 0;
+  totalGasolineras = 0;
+  gasolinerasCargadas = 0;
+  cargandoEnSegundoPlano = false;
+  readonly maxResultadosVisibles = MAX_RESULTADOS_VISIBLES;
   
   filtros = {
     provincia: '',
@@ -41,6 +53,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   };
 
   private destroy$ = new Subject<void>();
+  private timeoutCargaProgresiva: number | null = null;
 
   constructor(
     private gasolinerasService: GasolinerasService,
@@ -61,6 +74,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelarCargaProgresiva();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -73,10 +87,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (gasolineras) => {
-          this.gasolineras = gasolineras;
-          this.extraerProvinciasYLocalidades();
-          this.aplicarFiltros();
-          this.loading = false;
+          this.iniciarCargaProgresiva(gasolineras);
         },
         error: (err) => {
           console.error('Error al cargar gasolineras:', err);
@@ -86,47 +97,107 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
       });
   }
 
+  private iniciarCargaProgresiva(gasolineras: GasolineraSimplificada[]): void {
+    this.cancelarCargaProgresiva();
+
+    this.gasolinerasCompletas = gasolineras;
+    this.totalGasolineras = gasolineras.length;
+
+    const totalInicial = Math.min(CARGA_INICIAL, this.totalGasolineras);
+    this.gasolineras = gasolineras.slice(0, totalInicial);
+    this.gasolinerasCargadas = this.gasolineras.length;
+
+    this.extraerProvinciasYLocalidades();
+    this.aplicarFiltros();
+    this.loading = false;
+
+    this.cargandoEnSegundoPlano = this.gasolinerasCargadas < this.totalGasolineras;
+    if (this.cargandoEnSegundoPlano) {
+      this.programarSiguienteLote();
+    }
+  }
+
+  private programarSiguienteLote(): void {
+    this.timeoutCargaProgresiva = window.setTimeout(() => {
+      const inicio = this.gasolinerasCargadas;
+      const fin = Math.min(inicio + TAMANO_LOTE, this.totalGasolineras);
+
+      if (inicio >= fin) {
+        this.cargandoEnSegundoPlano = false;
+        this.timeoutCargaProgresiva = null;
+        return;
+      }
+
+      this.gasolineras = this.gasolinerasCompletas.slice(0, fin);
+      this.gasolinerasCargadas = fin;
+
+      this.extraerProvinciasYLocalidades();
+      this.aplicarFiltros();
+
+      this.cargandoEnSegundoPlano = this.gasolinerasCargadas < this.totalGasolineras;
+
+      if (this.cargandoEnSegundoPlano) {
+        this.programarSiguienteLote();
+      } else {
+        this.timeoutCargaProgresiva = null;
+      }
+    }, RETARDO_ENTRE_LOTES_MS);
+  }
+
+  private cancelarCargaProgresiva(): void {
+    if (this.timeoutCargaProgresiva !== null) {
+      window.clearTimeout(this.timeoutCargaProgresiva);
+      this.timeoutCargaProgresiva = null;
+    }
+
+    this.cargandoEnSegundoPlano = false;
+  }
+
   extraerProvinciasYLocalidades(): void {
     const provinciasSet = new Set<string>();
     const localidadesSet = new Set<string>();
+    const localidadesPorProvinciaMap = new Map<string, Set<string>>();
 
     this.gasolineras.forEach(g => {
       if (g.provincia) provinciasSet.add(g.provincia);
       if (g.localidad) localidadesSet.add(g.localidad);
+
+      if (g.provincia && g.localidad) {
+        if (!localidadesPorProvinciaMap.has(g.provincia)) {
+          localidadesPorProvinciaMap.set(g.provincia, new Set<string>());
+        }
+
+        localidadesPorProvinciaMap.get(g.provincia)!.add(g.localidad);
+      }
     });
 
     this.provincias = Array.from(provinciasSet).sort();
     this.localidades = Array.from(localidadesSet).sort();
+    this.localidadesPorProvincia = Array.from(localidadesPorProvinciaMap.entries()).reduce<Record<string, string[]>>((acc, [provincia, localidades]) => {
+      acc[provincia] = Array.from(localidades).sort();
+      return acc;
+    }, {});
   }
 
   aplicarFiltros(): void {
-    let resultado = [...this.gasolineras];
+    const provinciaFiltro = this.filtros.provincia.toLowerCase();
+    const localidadFiltro = this.filtros.localidad.toLowerCase();
+    const codigoPostalFiltro = this.filtros.codigoPostal.trim();
+    const tipoCombustible = this.filtros.tipoCombustible;
+    const resultado: GasolineraSimplificada[] = [];
+    let totalCoincidencias = 0;
 
-    if (this.filtros.provincia) {
-      resultado = resultado.filter(g => 
-        g.provincia.toLowerCase().includes(this.filtros.provincia.toLowerCase())
-      );
+    for (const gasolinera of this.gasolineras) {
+      if (!this.coincideConFiltros(gasolinera, provinciaFiltro, localidadFiltro, codigoPostalFiltro)) {
+        continue;
+      }
+
+      totalCoincidencias++;
+      const precio = gasolinera.precios[tipoCombustible] ?? Number.POSITIVE_INFINITY;
+      this.insertarOrdenado(resultado, gasolinera, precio, item => item.precios[tipoCombustible] ?? Number.POSITIVE_INFINITY);
     }
 
-    if (this.filtros.localidad) {
-      resultado = resultado.filter(g => 
-        g.localidad.toLowerCase().includes(this.filtros.localidad.toLowerCase())
-      );
-    }
-
-    if (this.filtros.codigoPostal) {
-      resultado = resultado.filter(g => 
-        g.codigoPostal.includes(this.filtros.codigoPostal)
-      );
-    }
-
-    // Ordenar por precio del combustible seleccionado
-    resultado = resultado.sort((a, b) => {
-      const precioA = a.precios[this.filtros.tipoCombustible] || Infinity;
-      const precioB = b.precios[this.filtros.tipoCombustible] || Infinity;
-      return precioA - precioB;
-    });
-
+    this.totalResultados = totalCoincidencias;
     this.gasolinerasFiltradas = resultado;
   }
 
@@ -176,19 +247,28 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     if (!this.ubicacionUsuario) return;
 
     this.mostrandoCercanas = true;
-    const gasolinerasConDistancia = this.gasolineras
-      .map(g => ({
-        ...g,
-        distancia: this.calcularDistancia(
-          this.ubicacionUsuario!.lat,
-          this.ubicacionUsuario!.lng,
-          g.latitud,
-          g.longitud
-        )
-      }))
-      .sort((a, b) => a.distancia - b.distancia);
+    const gasolinerasBase = this.gasolinerasCompletas.length > 0 ? this.gasolinerasCompletas : this.gasolineras;
+    this.totalResultados = gasolinerasBase.length;
 
-    this.gasolinerasFiltradas = gasolinerasConDistancia as any;
+    const gasolinerasConDistancia: GasolineraSimplificada[] = [];
+
+    for (const gasolinera of gasolinerasBase) {
+      const distancia = this.calcularDistancia(
+        this.ubicacionUsuario.lat,
+        this.ubicacionUsuario.lng,
+        gasolinera.latitud,
+        gasolinera.longitud
+      );
+
+      this.insertarOrdenado(
+        gasolinerasConDistancia,
+        { ...gasolinera, distancia },
+        distancia,
+        item => item.distancia ?? Number.POSITIVE_INFINITY
+      );
+    }
+
+    this.gasolinerasFiltradas = gasolinerasConDistancia;
   }
 
   calcularDistancia(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -213,6 +293,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   }
 
   refrescar(): void {
+    this.cancelarCargaProgresiva();
     this.gasolinerasService.refrescar();
     this.cargarGasolineras();
   }
@@ -220,6 +301,54 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   limpiarFavoritos(): void {
     if (confirm('¿Estás seguro de que quieres eliminar todos los favoritos?')) {
       this.favoritosService.limpiarFavoritos();
+    }
+  }
+
+  private coincideConFiltros(
+    gasolinera: GasolineraSimplificada,
+    provinciaFiltro: string,
+    localidadFiltro: string,
+    codigoPostalFiltro: string
+  ): boolean {
+    if (provinciaFiltro && !gasolinera.provincia.toLowerCase().includes(provinciaFiltro)) {
+      return false;
+    }
+
+    if (localidadFiltro && !gasolinera.localidad.toLowerCase().includes(localidadFiltro)) {
+      return false;
+    }
+
+    if (codigoPostalFiltro && !gasolinera.codigoPostal.includes(codigoPostalFiltro)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private insertarOrdenado(
+    resultados: GasolineraSimplificada[],
+    gasolinera: GasolineraSimplificada,
+    valor: number,
+    obtenerValor: (item: GasolineraSimplificada) => number
+  ): void {
+    const ultimoValor = resultados.length > 0
+      ? obtenerValor(resultados[resultados.length - 1])
+      : Number.POSITIVE_INFINITY;
+
+    if (resultados.length === this.maxResultadosVisibles && valor >= ultimoValor) {
+      return;
+    }
+
+    const indiceInsercion = resultados.findIndex(item => valor < obtenerValor(item));
+
+    if (indiceInsercion === -1) {
+      resultados.push(gasolinera);
+    } else {
+      resultados.splice(indiceInsercion, 0, gasolinera);
+    }
+
+    if (resultados.length > this.maxResultadosVisibles) {
+      resultados.pop();
     }
   }
 

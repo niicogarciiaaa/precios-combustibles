@@ -150,6 +150,13 @@
   color: #856404;
 }
 
+.contador-progresivo {
+  text-align: center;
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
 @media (max-width: 768px) {
   .grid-gasolineras {
     grid-template-columns: 1fr;

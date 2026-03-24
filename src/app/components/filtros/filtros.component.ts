@@ -10,7 +10,7 @@ export class FiltrosComponent implements OnChanges {
   @Output() buscarCercanas = new EventEmitter<void>();
   @Input() provincias: string[] = [];
   @Input() localidades: string[] = [];
-  @Input() todasLasGasolineras: any[] = [];
+  @Input() localidadesPorProvincia: Record<string, string[]> = {};
 
   localidadesFiltradas: string[] = [];
   buscandoUbicacion = false;
@@ -44,14 +44,8 @@ export class FiltrosComponent implements OnChanges {
     this.filtros.localidad = '';
     
     // Filtrar localidades de la provincia seleccionada
-    if (this.filtros.provincia && this.todasLasGasolineras.length > 0) {
-      const localidadesSet = new Set<string>();
-      this.todasLasGasolineras
-        .filter(g => g.provincia === this.filtros.provincia)
-        .forEach(g => {
-          if (g.localidad) localidadesSet.add(g.localidad);
-        });
-      this.localidadesFiltradas = Array.from(localidadesSet).sort();
+    if (this.filtros.provincia) {
+      this.localidadesFiltradas = this.localidadesPorProvincia[this.filtros.provincia] || [];
     } else {
       this.localidadesFiltradas = [...this.localidades];
     }
