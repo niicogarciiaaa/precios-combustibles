@@ -21,6 +21,7 @@ export class GasolinerasService {
   private gasolinerasCompletas$: Observable<GasolineraSimplificada[]> | null = null;
   private provincias$: Observable<ProvinciaMiteco[]> | null = null;
   private gasolinerasPorProvinciaCache = new Map<string, Observable<GasolineraSimplificada[]>>();
+  private readonly replayConfig = { bufferSize: 1, refCount: true } as const;
 
   constructor(private http: HttpClient) {}
 
@@ -33,7 +34,7 @@ export class GasolinerasService {
         map(provincias =>
           [...provincias].sort((a, b) => a.Provincia.localeCompare(b.Provincia, 'es'))
         ),
-        shareReplay(1)
+        shareReplay(this.replayConfig)
       );
     }
     return this.provincias$;
@@ -53,7 +54,7 @@ export class GasolinerasService {
       const provincia$ = interval(this.REFRESH_INTERVAL).pipe(
         startWith(0),
         switchMap(() => this.fetchGasolinerasPorProvincia(idNormalizado)),
-        shareReplay(1)
+        shareReplay(this.replayConfig)
       );
       this.gasolinerasPorProvinciaCache.set(idNormalizado, provincia$);
     }
@@ -69,7 +70,7 @@ export class GasolinerasService {
       this.gasolineras$ = interval(this.REFRESH_INTERVAL).pipe(
         startWith(0),
         switchMap(() => this.fetchGasolineras()),
-        shareReplay(1)
+        shareReplay(this.replayConfig)
       );
     }
     return this.gasolineras$;
@@ -84,7 +85,7 @@ export class GasolinerasService {
       this.gasolinerasCompletas$ = interval(this.REFRESH_INTERVAL).pipe(
         startWith(0),
         switchMap(() => this.fetchTodasLasProvinciasProgresivo()),
-        shareReplay(1)
+        shareReplay(this.replayConfig)
       );
     }
     return this.gasolinerasCompletas$;

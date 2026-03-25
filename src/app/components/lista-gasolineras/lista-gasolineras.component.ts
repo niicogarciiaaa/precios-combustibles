@@ -21,12 +21,14 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   provincias: string[] = [];
   localidades: string[] = [];
   localidadesPorProvincia: Record<string, string[]> = {};
-  loading = true;
+  loading = false;
   error: string | null = null;
+  esperandoSeleccion = true;
   ubicacionUsuario: { lat: number; lng: number } | null = null;
   mostrandoCercanas = false;
   mostrarFavoritos = false;
   numeroFavoritos = 0;
+  favoritosIdSet = new Set<string>();
   totalResultados = 0;
   totalGasolineras = 0;
   gasolinerasCargadas = 0;
@@ -57,6 +59,8 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   private totalProcesado = 0;
   private cargaGasolinerasSub: Subscription | null = null;
   private provinciasSub: Subscription | null = null;
+  private modoCargaActual: 'completa' | 'provincia' = 'completa';
+  private provinciaCargadaActual = '';
   private provinciasSet = new Set<string>();
   private localidadesSet = new Set<string>();
   private localidadesPorProvinciaMap = new Map<string, Set<string>>();
@@ -68,7 +72,6 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.precargarProvincias();
-    this.cargarGasolineras();
     
     // Escuchar cambios en favoritos
     this.favoritosService.getFavoritos()
@@ -76,6 +79,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
       .subscribe(favoritos => {
         this.favoritos = favoritos;
         this.numeroFavoritos = favoritos.length;
+        this.favoritosIdSet = new Set(favoritos.map(f => f.id));
       });
   }
 
@@ -106,6 +110,15 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
             ])
           );
           this.provincias = provincias.map(provincia => provincia.Provincia);
+
+          // Auto-seleccionar A Coruña en la primera carga
+          if (this.esperandoSeleccion) {
+            const provinciaDefecto = this.provincias.find(p => p.toLowerCase().includes('coruña'));
+            if (provinciaDefecto) {
+              this.filtros = { ...this.filtros, provincia: provinciaDefecto };
+              this.cargarGasolinerasProvinciaSeleccionada(provinciaDefecto);
+            }
+          }
         },
         error: (err) => {
           console.error('Error al cargar provincias:', err);
@@ -115,8 +128,11 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
   cargarGasolineras(): void {
     this.cargaGasolinerasSub?.unsubscribe();
+    this.modoCargaActual = 'completa';
+    this.provinciaCargadaActual = '';
     this.reiniciarDatosCargados();
     this.loading = true;
+    this.esperandoSeleccion = false;
     this.error = null;
     let primeraEmision = true;
 
@@ -161,6 +177,47 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
           this.error = 'Error al cargar los datos. Por favor, intenta de nuevo más tarde.';
           this.loading = false;
           this.cancelarCargaProgresiva();
+        }
+      });
+  }
+
+  private cargarGasolinerasProvinciaSeleccionada(nombreProvincia: string): void {
+    const idProvincia = this.provinciasPorNombre.get(nombreProvincia)?.trim();
+
+    if (!idProvincia) {
+      this.reiniciarDatosCargados();
+      this.error = 'No se pudo resolver la provincia seleccionada.';
+      this.loading = false;
+      return;
+    }
+
+    this.cargaGasolinerasSub?.unsubscribe();
+    this.reiniciarDatosCargados();
+    this.modoCargaActual = 'provincia';
+    this.provinciaCargadaActual = nombreProvincia;
+    this.loading = true;
+    this.esperandoSeleccion = false;
+    this.error = null;
+
+    this.cargaGasolinerasSub = this.gasolinerasService.obtenerGasolinerasPorProvinciaId(idProvincia)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (gasolineras) => {
+          this.cargandoEnSegundoPlano = false;
+          this.totalProcesado = gasolineras.length;
+          this.gasolineras = gasolineras;
+          this.gasolinerasCompletas = gasolineras;
+          this.totalGasolineras = gasolineras.length;
+          this.gasolinerasCargadas = gasolineras.length;
+
+          this.extraerProvinciasYLocalidades();
+          this.aplicarFiltros();
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Error al cargar gasolineras de la provincia:', err);
+          this.error = 'Error al cargar las gasolineras de la provincia seleccionada.';
+          this.loading = false;
         }
       });
   }
@@ -310,9 +367,31 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosChange(filtros: any): void {
+    const provinciaAnterior = this.filtros.provincia;
     this.filtros = { ...this.filtros, ...filtros };
     this.mostrandoCercanas = false;
     this.mostrarFavoritos = false;
+
+    if (this.filtros.provincia !== provinciaAnterior) {
+      if (this.filtros.provincia) {
+        this.cargarGasolinerasProvinciaSeleccionada(this.filtros.provincia);
+        return;
+      }
+
+      if (this.modoCargaActual === 'provincia') {
+        this.cargaGasolinerasSub?.unsubscribe();
+        this.reiniciarDatosCargados();
+        this.modoCargaActual = 'completa';
+        this.provinciaCargadaActual = '';
+        this.esperandoSeleccion = true;
+        return;
+      }
+    }
+
+    if (this.modoCargaActual === 'provincia' && this.filtros.provincia && this.filtros.provincia !== this.provinciaCargadaActual) {
+      this.cargarGasolinerasProvinciaSeleccionada(this.filtros.provincia);
+      return;
+    }
 
     this.gasolineras = this.gasolinerasCompletas;
     this.aplicarFiltros();
@@ -325,6 +404,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
+    this.esperandoSeleccion = false;
     this.error = null;
 
     navigator.geolocation.getCurrentPosition(
@@ -333,8 +413,45 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         };
-        this.mostrarGasolinerasCercanas();
-        this.loading = false;
+
+        // Si ya tenemos datos, ordenar directamente
+        if (this.gasolinerasCompletas.length > 0) {
+          this.mostrarGasolinerasCercanas();
+          this.loading = false;
+          return;
+        }
+
+        // Si no hay datos, cargar todo y mostrar cercanas cuando llegue la primera emisión
+        this.cargaGasolinerasSub?.unsubscribe();
+        this.reiniciarDatosCargados();
+        this.modoCargaActual = 'completa';
+        let primeraEmision = true;
+
+        this.cargaGasolinerasSub = this.gasolinerasService.obtenerGasolinerasCompletas()
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (gasolineras) => {
+              this.gasolinerasCompletas = gasolineras;
+              this.gasolineras = gasolineras;
+              this.totalGasolineras = gasolineras.length;
+              this.gasolinerasCargadas = gasolineras.length;
+              this.totalProcesado = gasolineras.length;
+              this.actualizarCatalogosIncremental(gasolineras);
+              this.mostrarGasolinerasCercanas();
+
+              if (primeraEmision) {
+                primeraEmision = false;
+                this.loading = false;
+                this.cargandoEnSegundoPlano = true;
+              }
+              this.resetearTimerFin();
+            },
+            error: (err) => {
+              console.error('Error al cargar gasolineras:', err);
+              this.error = 'Error al cargar los datos. Por favor, intenta de nuevo más tarde.';
+              this.loading = false;
+            }
+          });
       },
       (error) => {
         this.loading = false;
@@ -405,7 +522,11 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   refrescar(): void {
     this.gasolinerasService.refrescar();
     this.precargarProvincias();
-    this.cargarGasolineras();
+    if (this.provinciaCargadaActual) {
+      this.cargarGasolinerasProvinciaSeleccionada(this.provinciaCargadaActual);
+    } else {
+      this.cargarGasolineras();
+    }
   }
 
   limpiarFavoritos(): void {

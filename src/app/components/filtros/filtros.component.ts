@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-filtros',
   templateUrl: './filtros.component.html',
-  styleUrls: ['./filtros.component.scss']
+  styleUrls: ['./filtros.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FiltrosComponent implements OnChanges {
   @Output() filtrosChange = new EventEmitter<any>();
@@ -11,6 +12,7 @@ export class FiltrosComponent implements OnChanges {
   @Input() provincias: string[] = [];
   @Input() localidades: string[] = [];
   @Input() localidadesPorProvincia: Record<string, string[]> = {};
+  @Input() provinciaInicial = '';
 
   localidadesFiltradas: string[] = [];
   buscandoUbicacion = false;
@@ -36,6 +38,10 @@ export class FiltrosComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['localidades'] && this.localidades) {
       this.localidadesFiltradas = [...this.localidades];
+    }
+    if (changes['provinciaInicial'] && this.provinciaInicial) {
+      this.filtros.provincia = this.provinciaInicial;
+      this.localidadesFiltradas = this.localidadesPorProvincia[this.provinciaInicial] || [];
     }
   }
 

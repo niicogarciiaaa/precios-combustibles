@@ -3,11 +3,12 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
   min-height: 300px;
   display: flex;
   flex-direction: column;
-  border: 5px solid red !important; // DEBUG: Borde rojo grueso para ver si se renderiza
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 
   &:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);

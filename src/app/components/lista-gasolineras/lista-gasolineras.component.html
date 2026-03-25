@@ -1,11 +1,12 @@
 <div class="lista-container">
-  <div class="filtros-sticky" *ngIf="provincias.length > 0 || !loading">
+  <div class="filtros-sticky">
     <app-filtros 
       (filtrosChange)="onFiltrosChange($event)"
       (buscarCercanas)="buscarCercanas()"
       [provincias]="provincias"
       [localidades]="localidades"
-      [localidadesPorProvincia]="localidadesPorProvincia">
+      [localidadesPorProvincia]="localidadesPorProvincia"
+      [provinciaInicial]="filtros.provincia">
     </app-filtros>
     
     <div class="header-lista">
@@ -26,7 +27,13 @@
   <div class="contenido-scrollable">
     <div *ngIf="loading" class="loading">
       <div class="spinner"></div>
-      <p>Cargando todas las gasolineras de España...</p>
+      <p>Cargando gasolineras…</p>
+    </div>
+
+    <div *ngIf="esperandoSeleccion && !loading && !mostrarFavoritos" class="bienvenida">
+      <div class="bienvenida-icono">⛽</div>
+      <h3>Selecciona una provincia</h3>
+      <p>Elige una provincia en los filtros de arriba para ver las gasolineras más baratas, o pulsa <strong>📍 Buscar cercanas</strong> para encontrar las más próximas a ti.</p>
     </div>
 
     <div *ngIf="error && !loading" class="error">
@@ -43,7 +50,8 @@
           <app-tarjeta-gasolinera 
             *ngFor="let gasolinera of favoritos; trackBy: trackByFn"
             [gasolinera]="gasolinera"
-            [combustibleDestacado]="filtros.tipoCombustible">
+            [combustibleDestacado]="filtros.tipoCombustible"
+            [esFavorito]="true">
           </app-tarjeta-gasolinera>
         </div>
         <button class="btn-limpiar-favoritos" 
@@ -66,7 +74,8 @@
           <app-tarjeta-gasolinera 
             *ngFor="let gasolinera of gasolinerasFiltradas; trackBy: trackByFn"
             [gasolinera]="gasolinera"
-            [combustibleDestacado]="filtros.tipoCombustible">
+            [combustibleDestacado]="filtros.tipoCombustible"
+            [esFavorito]="favoritosIdSet.has(gasolinera.id)">
           </app-tarjeta-gasolinera>
         </div>
 
@@ -76,7 +85,7 @@
       </div>
     </div>
 
-    <div *ngIf="!loading && !mostrarFavoritos && hayDatosCargados && gasolinerasFiltradas.length === 0" class="sin-resultados">
+    <div *ngIf="!loading && !esperandoSeleccion && !mostrarFavoritos && hayDatosCargados && gasolinerasFiltradas.length === 0" class="sin-resultados">
       No se encontraron gasolineras.
     </div>
   </div>
