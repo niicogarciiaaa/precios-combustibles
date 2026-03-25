@@ -65,3 +65,12 @@ export type TipoCombustible =
   'gnc' | 
   'bioetanol' | 
   'biodiesel';
+
+// Provincia del listado MITECO (el campo IDPovincia tiene un typo en la API oficial)
+export interface ProvinciaMiteco {
+  IDPovincia?: string;   // typo oficial de la API
+  IDProvincia?: string;  // forma correcta (por si lo corrigen)
+  Provincia: string;
+  IDCCAA: string;
+  CCAA: string;
+}

@@ -5,9 +5,6 @@ import { FavoritosService } from '../../services/favoritos.service';
 import { GasolineraSimplificada, TipoCombustible } from '../../models/gasolinera.model';
 
 const MAX_RESULTADOS_VISIBLES = 50;
-const CARGA_INICIAL = 500;
-const TAMANO_LOTE = 500;
-const RETARDO_ENTRE_LOTES_MS = 30;
 
 @Component({
   selector: 'app-lista-gasolineras',
@@ -53,7 +50,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   };
 
   private destroy$ = new Subject<void>();
-  private timeoutCargaProgresiva: number | null = null;
+  private timerFinCarga: number | null = null;
 
   constructor(
     private gasolinerasService: GasolinerasService,
@@ -82,74 +79,55 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   cargarGasolineras(): void {
     this.loading = true;
     this.error = null;
+    let primeraEmision = true;
 
-    this.gasolinerasService.obtenerGasolineras()
+    // obtenerGasolinerasCompletas() carga las ~52 provincias en paralelo (8 a la vez)
+    // y emite un array acumulado cada vez que llega una provincia nueva.
+    // Primera emisión ~300 ms; carga completa en ~5-10 s.
+    this.gasolinerasService.obtenerGasolinerasCompletas()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (gasolineras) => {
-          this.iniciarCargaProgresiva(gasolineras);
+          this.gasolinerasCompletas = gasolineras;
+          this.gasolineras = gasolineras;
+          this.totalGasolineras = gasolineras.length;
+          this.gasolinerasCargadas = gasolineras.length;
+
+          this.extraerProvinciasYLocalidades();
+          this.aplicarFiltros();
+
+          if (primeraEmision) {
+            primeraEmision = false;
+            this.loading = false;
+            this.cargandoEnSegundoPlano = true;
+          }
+
+          // Reinicia el temporizador: si no llega otra emisión en 3 s,
+          // consideramos que todas las provincias ya se cargaron.
+          this.resetearTimerFin();
         },
         error: (err) => {
           console.error('Error al cargar gasolineras:', err);
           this.error = 'Error al cargar los datos. Por favor, intenta de nuevo más tarde.';
           this.loading = false;
+          this.cancelarCargaProgresiva();
         }
       });
   }
 
-  private iniciarCargaProgresiva(gasolineras: GasolineraSimplificada[]): void {
+  private resetearTimerFin(): void {
     this.cancelarCargaProgresiva();
-
-    this.gasolinerasCompletas = gasolineras;
-    this.totalGasolineras = gasolineras.length;
-
-    const totalInicial = Math.min(CARGA_INICIAL, this.totalGasolineras);
-    this.gasolineras = gasolineras.slice(0, totalInicial);
-    this.gasolinerasCargadas = this.gasolineras.length;
-
-    this.extraerProvinciasYLocalidades();
-    this.aplicarFiltros();
-    this.loading = false;
-
-    this.cargandoEnSegundoPlano = this.gasolinerasCargadas < this.totalGasolineras;
-    if (this.cargandoEnSegundoPlano) {
-      this.programarSiguienteLote();
-    }
-  }
-
-  private programarSiguienteLote(): void {
-    this.timeoutCargaProgresiva = window.setTimeout(() => {
-      const inicio = this.gasolinerasCargadas;
-      const fin = Math.min(inicio + TAMANO_LOTE, this.totalGasolineras);
-
-      if (inicio >= fin) {
-        this.cargandoEnSegundoPlano = false;
-        this.timeoutCargaProgresiva = null;
-        return;
-      }
-
-      this.gasolineras = this.gasolinerasCompletas.slice(0, fin);
-      this.gasolinerasCargadas = fin;
-
-      this.extraerProvinciasYLocalidades();
-      this.aplicarFiltros();
-
-      this.cargandoEnSegundoPlano = this.gasolinerasCargadas < this.totalGasolineras;
-
-      if (this.cargandoEnSegundoPlano) {
-        this.programarSiguienteLote();
-      } else {
-        this.timeoutCargaProgresiva = null;
-      }
-    }, RETARDO_ENTRE_LOTES_MS);
+    this.timerFinCarga = window.setTimeout(() => {
+      this.cargandoEnSegundoPlano = false;
+      this.timerFinCarga = null;
+    }, 3000);
   }
 
   private cancelarCargaProgresiva(): void {
-    if (this.timeoutCargaProgresiva !== null) {
-      window.clearTimeout(this.timeoutCargaProgresiva);
-      this.timeoutCargaProgresiva = null;
+    if (this.timerFinCarga !== null) {
+      window.clearTimeout(this.timerFinCarga);
+      this.timerFinCarga = null;
     }
-
     this.cargandoEnSegundoPlano = false;
   }
 
