@@ -1,5 +1,5 @@
 <div class="lista-container">
-  <div class="filtros-sticky" *ngIf="!loading">
+  <div class="filtros-sticky" *ngIf="provincias.length > 0 || !loading">
     <app-filtros 
       (filtrosChange)="onFiltrosChange($event)"
       (buscarCercanas)="buscarCercanas()"
@@ -26,14 +26,14 @@
   <div class="contenido-scrollable">
     <div *ngIf="loading" class="loading">
       <div class="spinner"></div>
-      <p>Cargando datos del MITECO...</p>
+      <p>Cargando todas las gasolineras de España...</p>
     </div>
 
     <div *ngIf="error && !loading" class="error">
       {{ error }}
     </div>
 
-    <div *ngIf="!loading && gasolinerasFiltradas.length > 0" class="resultados">
+    <div *ngIf="!loading && (gasolinerasFiltradas.length > 0 || mostrarFavoritos)" class="resultados">
       <div *ngIf="mostrarFavoritos" class="seccion-favoritos">
         <h3>⭐ Mis Favoritos</h3>
         <div *ngIf="favoritos.length === 0" class="sin-favoritos">
@@ -76,7 +76,7 @@
       </div>
     </div>
 
-    <div *ngIf="!loading && gasolinerasFiltradas.length === 0" class="sin-resultados">
+    <div *ngIf="!loading && !mostrarFavoritos && hayDatosCargados && gasolinerasFiltradas.length === 0" class="sin-resultados">
       No se encontraron gasolineras.
     </div>
   </div>

@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Subscription, takeUntil } from 'rxjs';
 import { GasolinerasService } from '../../services/gasolineras.service';
 import { FavoritosService } from '../../services/favoritos.service';
-import { GasolineraSimplificada, TipoCombustible } from '../../models/gasolinera.model';
+import { GasolineraSimplificada, ProvinciaMiteco, TipoCombustible } from '../../models/gasolinera.model';
 
 const MAX_RESULTADOS_VISIBLES = 50;
 
@@ -14,6 +14,8 @@ const MAX_RESULTADOS_VISIBLES = 50;
 export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   gasolineras: GasolineraSimplificada[] = [];
   private gasolinerasCompletas: GasolineraSimplificada[] = [];
+  private provinciasMiteco: ProvinciaMiteco[] = [];
+  private provinciasPorNombre = new Map<string, string>();
   gasolinerasFiltradas: GasolineraSimplificada[] = [];
   favoritos: GasolineraSimplificada[] = [];
   provincias: string[] = [];
@@ -51,6 +53,13 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private timerFinCarga: number | null = null;
+  private timerCatalogos: number | null = null;
+  private totalProcesado = 0;
+  private cargaGasolinerasSub: Subscription | null = null;
+  private provinciasSub: Subscription | null = null;
+  private provinciasSet = new Set<string>();
+  private localidadesSet = new Set<string>();
+  private localidadesPorProvinciaMap = new Map<string, Set<string>>();
 
   constructor(
     private gasolinerasService: GasolinerasService,
@@ -58,7 +67,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Cargar gasolineras
+    this.precargarProvincias();
     this.cargarGasolineras();
     
     // Escuchar cambios en favoritos
@@ -71,12 +80,42 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cargaGasolinerasSub?.unsubscribe();
+    this.provinciasSub?.unsubscribe();
     this.cancelarCargaProgresiva();
+    this.cancelarPublicacionCatalogos();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  get hayDatosCargados(): boolean {
+    return this.gasolinerasCompletas.length > 0;
+  }
+
+  private precargarProvincias(): void {
+    this.provinciasSub?.unsubscribe();
+    this.provinciasSub = this.gasolinerasService.obtenerProvincias()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (provincias) => {
+          this.provinciasMiteco = provincias;
+          this.provinciasPorNombre = new Map(
+            provincias.map(provincia => [
+              provincia.Provincia,
+              (provincia.IDPovincia || provincia.IDProvincia || '').trim()
+            ])
+          );
+          this.provincias = provincias.map(provincia => provincia.Provincia);
+        },
+        error: (err) => {
+          console.error('Error al cargar provincias:', err);
+        }
+      });
+  }
+
   cargarGasolineras(): void {
+    this.cargaGasolinerasSub?.unsubscribe();
+    this.reiniciarDatosCargados();
     this.loading = true;
     this.error = null;
     let primeraEmision = true;
@@ -84,17 +123,28 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     // obtenerGasolinerasCompletas() carga las ~52 provincias en paralelo (8 a la vez)
     // y emite un array acumulado cada vez que llega una provincia nueva.
     // Primera emisión ~300 ms; carga completa en ~5-10 s.
-    this.gasolinerasService.obtenerGasolinerasCompletas()
+    this.cargaGasolinerasSub = this.gasolinerasService.obtenerGasolinerasCompletas()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (gasolineras) => {
+          const nuevasGasolineras = gasolineras.slice(this.totalProcesado);
+
+          if (nuevasGasolineras.length === 0) {
+            this.resetearTimerFin();
+            return;
+          }
+
           this.gasolinerasCompletas = gasolineras;
           this.gasolineras = gasolineras;
           this.totalGasolineras = gasolineras.length;
           this.gasolinerasCargadas = gasolineras.length;
+          this.totalProcesado = gasolineras.length;
 
-          this.extraerProvinciasYLocalidades();
-          this.aplicarFiltros();
+          this.actualizarCatalogosIncremental(nuevasGasolineras);
+
+          if (!this.mostrandoCercanas) {
+            this.aplicarFiltrosIncremental(nuevasGasolineras, primeraEmision);
+          }
 
           if (primeraEmision) {
             primeraEmision = false;
@@ -116,10 +166,15 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   }
 
   private resetearTimerFin(): void {
-    this.cancelarCargaProgresiva();
+    if (this.timerFinCarga !== null) {
+      window.clearTimeout(this.timerFinCarga);
+    }
+
+    this.cargandoEnSegundoPlano = true;
     this.timerFinCarga = window.setTimeout(() => {
       this.cargandoEnSegundoPlano = false;
       this.timerFinCarga = null;
+      this.publicarCatalogos();
     }, 3000);
   }
 
@@ -131,30 +186,78 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     this.cargandoEnSegundoPlano = false;
   }
 
-  extraerProvinciasYLocalidades(): void {
-    const provinciasSet = new Set<string>();
-    const localidadesSet = new Set<string>();
-    const localidadesPorProvinciaMap = new Map<string, Set<string>>();
+  private cancelarPublicacionCatalogos(): void {
+    if (this.timerCatalogos !== null) {
+      window.clearTimeout(this.timerCatalogos);
+      this.timerCatalogos = null;
+    }
+  }
 
-    this.gasolineras.forEach(g => {
-      if (g.provincia) provinciasSet.add(g.provincia);
-      if (g.localidad) localidadesSet.add(g.localidad);
+  private reiniciarDatosCargados(): void {
+    this.cancelarCargaProgresiva();
+    this.cancelarPublicacionCatalogos();
+    this.gasolineras = [];
+    this.gasolinerasCompletas = [];
+    this.gasolinerasFiltradas = [];
+    this.localidades = [];
+    this.localidadesPorProvincia = {};
+    this.totalResultados = 0;
+    this.totalGasolineras = 0;
+    this.gasolinerasCargadas = 0;
+    this.totalProcesado = 0;
+    this.provinciasSet.clear();
+    this.localidadesSet.clear();
+    this.localidadesPorProvinciaMap.clear();
+  }
 
-      if (g.provincia && g.localidad) {
-        if (!localidadesPorProvinciaMap.has(g.provincia)) {
-          localidadesPorProvinciaMap.set(g.provincia, new Set<string>());
+  private actualizarCatalogosIncremental(gasolineras: GasolineraSimplificada[]): void {
+    for (const gasolinera of gasolineras) {
+      if (gasolinera.provincia) {
+        this.provinciasSet.add(gasolinera.provincia);
+      }
+
+      if (gasolinera.localidad) {
+        this.localidadesSet.add(gasolinera.localidad);
+      }
+
+      if (gasolinera.provincia && gasolinera.localidad) {
+        if (!this.localidadesPorProvinciaMap.has(gasolinera.provincia)) {
+          this.localidadesPorProvinciaMap.set(gasolinera.provincia, new Set<string>());
         }
 
-        localidadesPorProvinciaMap.get(g.provincia)!.add(g.localidad);
+        this.localidadesPorProvinciaMap.get(gasolinera.provincia)!.add(gasolinera.localidad);
       }
-    });
+    }
 
-    this.provincias = Array.from(provinciasSet).sort();
-    this.localidades = Array.from(localidadesSet).sort();
-    this.localidadesPorProvincia = Array.from(localidadesPorProvinciaMap.entries()).reduce<Record<string, string[]>>((acc, [provincia, localidades]) => {
+    this.programarPublicacionCatalogos();
+  }
+
+  private programarPublicacionCatalogos(): void {
+    if (this.timerCatalogos !== null) {
+      return;
+    }
+
+    this.timerCatalogos = window.setTimeout(() => {
+      this.publicarCatalogos();
+      this.timerCatalogos = null;
+    }, 250);
+  }
+
+  private publicarCatalogos(): void {
+    this.provincias = this.provinciasMiteco.map(provincia => provincia.Provincia);
+    this.localidades = Array.from(this.localidadesSet).sort();
+    this.localidadesPorProvincia = Array.from(this.localidadesPorProvinciaMap.entries()).reduce<Record<string, string[]>>((acc, [provincia, localidades]) => {
       acc[provincia] = Array.from(localidades).sort();
       return acc;
     }, {});
+  }
+
+  extraerProvinciasYLocalidades(): void {
+    this.provinciasSet.clear();
+    this.localidadesSet.clear();
+    this.localidadesPorProvinciaMap.clear();
+    this.actualizarCatalogosIncremental(this.gasolinerasCompletas);
+    this.publicarCatalogos();
   }
 
   aplicarFiltros(): void {
@@ -179,10 +282,39 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     this.gasolinerasFiltradas = resultado;
   }
 
+  private aplicarFiltrosIncremental(gasolineras: GasolineraSimplificada[], reiniciar: boolean = false): void {
+    const provinciaFiltro = this.filtros.provincia.toLowerCase();
+    const localidadFiltro = this.filtros.localidad.toLowerCase();
+    const codigoPostalFiltro = this.filtros.codigoPostal.trim();
+    const tipoCombustible = this.filtros.tipoCombustible;
+
+    if (reiniciar) {
+      this.totalResultados = 0;
+      this.gasolinerasFiltradas = [];
+    }
+
+    for (const gasolinera of gasolineras) {
+      if (!this.coincideConFiltros(gasolinera, provinciaFiltro, localidadFiltro, codigoPostalFiltro)) {
+        continue;
+      }
+
+      this.totalResultados++;
+      const precio = gasolinera.precios[tipoCombustible] ?? Number.POSITIVE_INFINITY;
+      this.insertarOrdenado(
+        this.gasolinerasFiltradas,
+        gasolinera,
+        precio,
+        item => item.precios[tipoCombustible] ?? Number.POSITIVE_INFINITY
+      );
+    }
+  }
+
   onFiltrosChange(filtros: any): void {
     this.filtros = { ...this.filtros, ...filtros };
     this.mostrandoCercanas = false;
     this.mostrarFavoritos = false;
+
+    this.gasolineras = this.gasolinerasCompletas;
     this.aplicarFiltros();
   }
 
@@ -271,8 +403,8 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   }
 
   refrescar(): void {
-    this.cancelarCargaProgresiva();
     this.gasolinerasService.refrescar();
+    this.precargarProvincias();
     this.cargarGasolineras();
   }
 

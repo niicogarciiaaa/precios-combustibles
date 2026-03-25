@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, interval, switchMap, shareReplay, startWith, of, from } from 'rxjs';
-import { map, mergeMap, scan, catchError } from 'rxjs/operators';
+import { map, mergeMap, scan, catchError, auditTime } from 'rxjs/operators';
 import { ApiResponse, Gasolinera, GasolineraSimplificada, PreciosCombustible, ProvinciaMiteco } from '../models/gasolinera.model';
 
 @Injectable({
@@ -22,9 +22,7 @@ export class GasolinerasService {
   private provincias$: Observable<ProvinciaMiteco[]> | null = null;
   private gasolinerasPorProvinciaCache = new Map<string, Observable<GasolineraSimplificada[]>>();
 
-  constructor(private http: HttpClient) {
-    this.limpiarCacheLegacyPersistente();
-  }
+  constructor(private http: HttpClient) {}
 
   /**
    * Obtiene listado de provincias (respuesta ligera)
@@ -158,7 +156,7 @@ export class GasolinerasService {
   }
 
   /**
-   * Carga todas las provincias en paralelo (8 simultáneas) y acumula resultados
+  * Carga todas las provincias en paralelo controlado y acumula resultados
    * emitiendo cada vez que llega una provincia nueva.
    */
   private fetchTodasLasProvinciasProgresivo(): Observable<GasolineraSimplificada[]> {
@@ -171,11 +169,16 @@ export class GasolinerasService {
             return this.fetchGasolinerasPorProvincia(id).pipe(
               catchError(() => of([] as GasolineraSimplificada[]))
             );
-          }, 8), // 8 peticiones en paralelo
-          scan(
-            (acumulado, bloque) => bloque.length ? [...acumulado, ...bloque] : acumulado,
-            [] as GasolineraSimplificada[]
-          )
+          }, 6), // Safari/iPhone suele rendir mejor con ~6 conexiones por host
+          scan((acumulado, bloque) => {
+            if (bloque.length > 0) {
+              acumulado.push(...bloque);
+            }
+
+            return acumulado;
+          }, [] as GasolineraSimplificada[]),
+          auditTime(180),
+          map(acumulado => acumulado.slice())
         )
       )
     );
@@ -216,11 +219,6 @@ export class GasolinerasService {
   private parsearCoordenada(coordenada: string): number {
     if (!coordenada) return 0;
     return parseFloat(coordenada.replace(',', '.')) || 0;
-  }
-
-  private limpiarCacheLegacyPersistente(): void {
-    localStorage.removeItem('gasolineras-cache-v1');
-    localStorage.removeItem('gasolineras-cache-timestamp-v1');
   }
 
   /**
