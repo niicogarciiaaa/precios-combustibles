@@ -1,9 +1,15 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .filtros-container {
   background: white;
   padding: 25px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 30px;
+  width: 100%;
 
   h3 {
     margin-top: 0;
