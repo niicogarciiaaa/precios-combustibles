@@ -184,6 +184,65 @@
   color: #856404;
 }
 
+.seccion-cercanas {
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 2px dashed #ddd;
+
+  .seccion-cercanas-header {
+    text-align: center;
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 1.4rem;
+      color: #2c3e50;
+    }
+
+    .seccion-cercanas-subtitulo {
+      margin: 0;
+      color: #666;
+      font-size: 0.95rem;
+
+      strong {
+        color: #667eea;
+      }
+    }
+  }
+
+  .grupo-localidad-cercana {
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.04) 0%, rgba(118, 75, 162, 0.04) 100%);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+
+    .grupo-localidad-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+    }
+
+    .grupo-localidad-nombre {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+
+    .grupo-localidad-distancia {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+  }
+}
+
 .contador-progresivo {
   text-align: center;
   margin: 0 0 16px;

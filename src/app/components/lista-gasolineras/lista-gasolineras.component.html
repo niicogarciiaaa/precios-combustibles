@@ -79,6 +79,31 @@
           </app-tarjeta-gasolinera>
         </div>
 
+        <!-- Localidades cercanas -->
+        <div *ngIf="localidadesCercanas.length > 0" class="seccion-cercanas">
+          <div class="seccion-cercanas-header">
+            <h3>📍 Localidades cercanas</h3>
+            <p class="seccion-cercanas-subtitulo">
+              Gasolineras en localidades próximas a <strong>{{ filtros.localidad }}</strong>
+            </p>
+          </div>
+
+          <div *ngFor="let grupo of localidadesCercanas" class="grupo-localidad-cercana">
+            <div class="grupo-localidad-header">
+              <span class="grupo-localidad-nombre">{{ grupo.localidad }}</span>
+              <span class="grupo-localidad-distancia">~{{ grupo.distanciaDesdeOrigen }} km</span>
+            </div>
+            <div class="grid-gasolineras">
+              <app-tarjeta-gasolinera
+                *ngFor="let gasolinera of grupo.gasolineras; trackBy: trackByFn"
+                [gasolinera]="gasolinera"
+                [combustibleDestacado]="filtros.tipoCombustible"
+                [esFavorito]="favoritosIdSet.has(gasolinera.id)">
+              </app-tarjeta-gasolinera>
+            </div>
+          </div>
+        </div>
+
         <p *ngIf="totalResultados > maxResultadosVisibles" class="aviso-limite">
           Mostrando las {{ maxResultadosVisibles }} gasolineras más baratas. Usa los filtros para refinar la búsqueda.
         </p>

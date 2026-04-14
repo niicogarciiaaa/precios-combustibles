@@ -5,6 +5,14 @@ import { FavoritosService } from '../../services/favoritos.service';
 import { GasolineraSimplificada, ProvinciaMiteco, TipoCombustible } from '../../models/gasolinera.model';
 
 const MAX_RESULTADOS_VISIBLES = 50;
+const RADIO_CERCANAS_KM = 20; // Radio para buscar localidades cercanas
+const MAX_LOCALIDADES_CERCANAS = 5; // Máximo de localidades cercanas a mostrar
+
+export interface GrupoLocalidadCercana {
+  localidad: string;
+  distanciaDesdeOrigen: number; // km desde el centro de la localidad buscada
+  gasolineras: GasolineraSimplificada[];
+}
 
 @Component({
   selector: 'app-lista-gasolineras',
@@ -17,6 +25,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   private provinciasMiteco: ProvinciaMiteco[] = [];
   private provinciasPorNombre = new Map<string, string>();
   gasolinerasFiltradas: GasolineraSimplificada[] = [];
+  localidadesCercanas: GrupoLocalidadCercana[] = [];
   favoritos: GasolineraSimplificada[] = [];
   provincias: string[] = [];
   localidades: string[] = [];
@@ -256,6 +265,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     this.gasolineras = [];
     this.gasolinerasCompletas = [];
     this.gasolinerasFiltradas = [];
+    this.localidadesCercanas = [];
     this.localidades = [];
     this.localidadesPorProvincia = {};
     this.totalResultados = 0;
@@ -337,6 +347,119 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
     this.totalResultados = totalCoincidencias;
     this.gasolinerasFiltradas = resultado;
+
+    // Buscar localidades cercanas si hay filtro de localidad
+    if (localidadFiltro) {
+      this.calcularLocalidadesCercanas(localidadFiltro, provinciaFiltro, tipoCombustible);
+    } else {
+      this.localidadesCercanas = [];
+    }
+  }
+
+  /**
+   * Calcula las localidades cercanas a la localidad buscada.
+   * Encuentra el "centro" de la localidad seleccionada (promedio de coordenadas)
+   * y busca gasolineras de otras localidades dentro de un radio determinado.
+   */
+  private calcularLocalidadesCercanas(
+    localidadFiltro: string,
+    provinciaFiltro: string,
+    tipoCombustible: string
+  ): void {
+    // 1. Encontrar todas las gasolineras de la localidad seleccionada para calcular su centro
+    const gasolinerasLocalidad = this.gasolineras.filter(g =>
+      g.localidad.toLowerCase().includes(localidadFiltro) &&
+      (!provinciaFiltro || g.provincia.toLowerCase().includes(provinciaFiltro))
+    );
+
+    if (gasolinerasLocalidad.length === 0) {
+      this.localidadesCercanas = [];
+      return;
+    }
+
+    // 2. Calcular el centro geográfico de la localidad
+    let sumLat = 0;
+    let sumLng = 0;
+    let count = 0;
+
+    for (const g of gasolinerasLocalidad) {
+      if (g.latitud && g.longitud) {
+        sumLat += g.latitud;
+        sumLng += g.longitud;
+        count++;
+      }
+    }
+
+    if (count === 0) {
+      this.localidadesCercanas = [];
+      return;
+    }
+
+    const centroLat = sumLat / count;
+    const centroLng = sumLng / count;
+
+    // 3. Buscar gasolineras de OTRAS localidades dentro del radio
+    const localidadOriginal = gasolinerasLocalidad[0].localidad.toLowerCase();
+    const gruposPorLocalidad = new Map<string, GasolineraSimplificada[]>();
+    const distanciasPorLocalidad = new Map<string, number>();
+
+    for (const gasolinera of this.gasolineras) {
+      // Saltar gasolineras de la misma localidad
+      if (gasolinera.localidad.toLowerCase() === localidadOriginal) {
+        continue;
+      }
+
+      // Filtrar por provincia si corresponde
+      if (provinciaFiltro && !gasolinera.provincia.toLowerCase().includes(provinciaFiltro)) {
+        continue;
+      }
+
+      // Calcular distancia al centro de la localidad buscada
+      const distancia = this.calcularDistancia(
+        centroLat, centroLng,
+        gasolinera.latitud, gasolinera.longitud
+      );
+
+      if (distancia <= RADIO_CERCANAS_KM) {
+        const nombreLocalidad = gasolinera.localidad;
+        if (!gruposPorLocalidad.has(nombreLocalidad)) {
+          gruposPorLocalidad.set(nombreLocalidad, []);
+          distanciasPorLocalidad.set(nombreLocalidad, distancia);
+        } else {
+          // Guardar la distancia mínima para ordenar
+          const distanciaActual = distanciasPorLocalidad.get(nombreLocalidad)!;
+          if (distancia < distanciaActual) {
+            distanciasPorLocalidad.set(nombreLocalidad, distancia);
+          }
+        }
+        gruposPorLocalidad.get(nombreLocalidad)!.push(gasolinera);
+      }
+    }
+
+    // 4. Convertir a array, ordenar por precio y por distancia
+    const tipo = tipoCombustible as keyof GasolineraSimplificada['precios'];
+    const grupos: GrupoLocalidadCercana[] = [];
+
+    gruposPorLocalidad.forEach((gasolineras, localidad) => {
+      // Ordenar gasolineras del grupo por precio
+      const ordenadas = gasolineras
+        .filter(g => g.precios[tipo] && g.precios[tipo]! > 0)
+        .sort((a, b) => (a.precios[tipo] ?? Infinity) - (b.precios[tipo] ?? Infinity))
+        .slice(0, 5); // Máximo 5 gasolineras por localidad cercana
+
+      if (ordenadas.length > 0) {
+        grupos.push({
+          localidad,
+          distanciaDesdeOrigen: Math.round((distanciasPorLocalidad.get(localidad) ?? 0) * 10) / 10,
+          gasolineras: ordenadas
+        });
+      }
+    });
+
+    // Ordenar grupos por distancia
+    grupos.sort((a, b) => a.distanciaDesdeOrigen - b.distanciaDesdeOrigen);
+
+    this.localidadesCercanas = grupos.slice(0, MAX_LOCALIDADES_CERCANAS);
   }
 
   private aplicarFiltrosIncremental(gasolineras: GasolineraSimplificada[], reiniciar: boolean = false): void {
@@ -371,6 +494,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     this.filtros = { ...this.filtros, ...filtros };
     this.mostrandoCercanas = false;
     this.mostrarFavoritos = false;
+    this.localidadesCercanas = [];
 
     if (this.filtros.provincia !== provinciaAnterior) {
       if (this.filtros.provincia) {
@@ -474,6 +598,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
     if (!this.ubicacionUsuario) return;
 
     this.mostrandoCercanas = true;
+    this.localidadesCercanas = [];
     const gasolinerasBase = this.gasolinerasCompletas.length > 0 ? this.gasolinerasCompletas : this.gasolineras;
     this.totalResultados = gasolinerasBase.length;
 
