@@ -7,6 +7,15 @@ import { AfterViewInit, Component } from '@angular/core';
 })
 export class AppComponent implements AfterViewInit {
   title = 'Precios Combustibles';
+  mostrarAyuda = false;
+
+  toggleAyuda(): void {
+    this.mostrarAyuda = !this.mostrarAyuda;
+  }
+
+  cerrarAyuda(): void {
+    this.mostrarAyuda = false;
+  }
 
   ngAfterViewInit(): void {
     try {

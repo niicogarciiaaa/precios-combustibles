@@ -3,8 +3,65 @@
     <div class="container">
       <h1>⛽ Precios de Combustibles</h1>
       <p class="subtitle">Datos actualizados del MITECO</p>
+      <button class="btn-ayuda" 
+              (click)="toggleAyuda()" 
+              [attr.aria-expanded]="mostrarAyuda"
+              aria-label="Abrir ayuda sobre cómo usar la aplicación">
+        ?
+      </button>
     </div>
   </header>
+
+  <!-- Panel de ayuda -->
+  <div class="ayuda-overlay" *ngIf="mostrarAyuda" (click)="cerrarAyuda()"></div>
+  <aside class="ayuda-panel" *ngIf="mostrarAyuda" role="dialog" aria-label="Ayuda">
+    <div class="ayuda-header">
+      <h2>📖 ¿Cómo usar la app?</h2>
+      <button class="btn-cerrar-ayuda" (click)="cerrarAyuda()" aria-label="Cerrar ayuda">✕</button>
+    </div>
+
+    <div class="ayuda-contenido">
+      <section class="ayuda-seccion">
+        <h3>🔍 Buscar gasolineras</h3>
+        <p>Selecciona una <strong>provincia</strong> en los filtros para cargar las gasolineras de tu zona. Después puedes filtrar por <strong>localidad</strong> o <strong>código postal</strong>.</p>
+      </section>
+
+      <section class="ayuda-seccion">
+        <h3>⛽ Tipo de combustible</h3>
+        <p>Elige el combustible que usas (Diésel, Gasolina 95, etc.) y la lista se ordenará automáticamente de <strong>más barata a más cara</strong>.</p>
+      </section>
+
+      <section class="ayuda-seccion">
+        <h3>📍 Buscar cercanas</h3>
+        <p>Pulsa <strong>"Buscar cercanas"</strong> para que la app use tu ubicación GPS y te muestre las gasolineras más próximas, ordenadas por distancia.</p>
+      </section>
+
+      <section class="ayuda-seccion">
+        <h3>🧮 Calculadora de ahorro</h3>
+        <p>Abre la calculadora, introduce los <strong>litros</strong> que vas a repostar y el <strong>consumo</strong> de tu vehículo. Te mostrará cuánto ahorras yendo a la más barata frente a la más cercana, descontando el coste del desplazamiento.</p>
+      </section>
+
+      <section class="ayuda-seccion">
+        <h3>⭐ Favoritos</h3>
+        <p>Pulsa la <strong>estrella ☆</strong> en cualquier gasolinera para guardarla. Accede a tus favoritos desde el botón <strong>"★ Favoritos"</strong> en la cabecera de la lista.</p>
+      </section>
+
+      <section class="ayuda-seccion">
+        <h3>🗺️ Ver en el mapa</h3>
+        <p>Cada gasolinera tiene un botón <strong>"Mapa"</strong> que abre su ubicación directamente en Google Maps para que puedas navegar hasta ella.</p>
+      </section>
+
+      <section class="ayuda-seccion">
+        <h3>🔄 Datos actualizados</h3>
+        <p>Los precios provienen de la <strong>API oficial del MITECO</strong> (Ministerio para la Transición Ecológica) y se actualizan automáticamente. Puedes forzar una actualización con el botón <strong>"Actualizar"</strong>.</p>
+      </section>
+
+      <section class="ayuda-seccion ayuda-tip">
+        <h3>💡 Consejo</h3>
+        <p>Instala la app en tu móvil: en el navegador, pulsa <strong>"Añadir a pantalla de inicio"</strong> para usarla como una aplicación nativa sin abrir el navegador.</p>
+      </section>
+    </div>
+  </aside>
   
   <main class="container" role="main">
     <div class="ads-container">
