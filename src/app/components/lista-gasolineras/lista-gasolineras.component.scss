@@ -12,52 +12,64 @@
 
 .filtros-sticky {
   flex-shrink: 0;
-  background-color: #f5f5f5;
-  padding: 0 0 10px 0;
+  background-color: #f0f2f5;
+  padding: 0 0 4px 0;
 }
 
 .contenido-scrollable {
   flex: 1;
-  padding: 20px;
+  padding: 8px 12px 20px;
 }
 
 .header-lista {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: 10px 14px;
   background-color: white;
-  border-bottom: 1px solid #e0e0e0;
-  gap: 15px;
+  border-bottom: 1px solid #e8e8e8;
+  gap: 8px;
 
   h2 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1rem;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .botones-header {
     display: flex;
-    gap: 10px;
+    gap: 6px;
+    flex-shrink: 0;
 
     button {
-      height: 44px;
+      min-height: 40px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      border-radius: 8px;
     }
   }
 }
 
 .loading {
   text-align: center;
-  padding: 60px 20px;
+  padding: 48px 16px;
 
   .spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #667eea;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     animation: spin 1s linear infinite;
-    margin: 20px auto;
+    margin: 16px auto;
+  }
+
+  p {
+    font-size: 0.9rem;
   }
 }
 
@@ -67,142 +79,146 @@
 }
 
 .error {
-  margin: 20px 0;
-  padding: 20px;
+  margin: 12px 0;
+  padding: 14px;
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
-  border-radius: 5px;
+  border-radius: 8px;
   color: #721c24;
   text-align: center;
+  font-size: 0.9rem;
 }
 
 .resultados {
   .contador {
     background-color: white;
-    padding: 15px 20px;
+    padding: 10px 14px;
     border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 0.9rem;
 
     strong {
       color: #667eea;
-      font-size: 1.2em;
+      font-size: 1.05em;
     }
   }
 
   .seccion-favoritos {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%);
-    padding: 20px;
-    border-radius: 12px;
-    border: 2px solid #ffd700;
-    margin-bottom: 30px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(255, 165, 0, 0.08) 100%);
+    padding: 14px;
+    border-radius: 10px;
+    border: 1.5px solid #ffd700;
+    margin-bottom: 16px;
 
     h3 {
-      margin: 0 0 20px 0;
+      margin: 0 0 14px 0;
       color: #ff8c00;
-      font-size: 1.3rem;
+      font-size: 1.05rem;
       text-align: center;
     }
 
     .sin-favoritos {
       text-align: center;
-      padding: 40px 20px;
+      padding: 30px 16px;
       color: #999;
-      font-size: 1rem;
+      font-size: 0.9rem;
     }
 
     .btn-limpiar-favoritos {
       display: block;
-      margin-top: 20px;
+      width: 100%;
+      margin-top: 14px;
       background-color: #ff6b6b;
       color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
+      padding: 12px;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      min-height: 44px;
 
-      &:hover {
+      &:active {
         background-color: #ff5252;
-        transform: scale(1.02);
       }
     }
   }
 }
 
+// Mobile-first: 1 columna
 .grid-gasolineras {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .bienvenida {
   text-align: center;
-  padding: 60px 20px;
+  padding: 40px 20px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  max-width: 480px;
-  margin: 40px auto;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin: 20px 0;
 
   .bienvenida-icono {
-    font-size: 3.5rem;
-    margin-bottom: 12px;
+    font-size: 2.8rem;
+    margin-bottom: 10px;
   }
 
   h3 {
-    margin: 0 0 12px;
-    font-size: 1.4rem;
+    margin: 0 0 8px;
+    font-size: 1.15rem;
     color: #2c3e50;
   }
 
   p {
     margin: 0;
     color: #666;
-    line-height: 1.6;
-    font-size: 1rem;
+    line-height: 1.5;
+    font-size: 0.9rem;
   }
 }
 
 .sin-resultados {
   text-align: center;
-  padding: 60px 20px;
+  padding: 40px 16px;
   background-color: white;
   border-radius: 8px;
   color: #7f8c8d;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
 .aviso-limite {
   text-align: center;
-  margin: 20px 0;
-  padding: 15px;
+  margin: 12px 0;
+  padding: 12px;
   background-color: #fff3cd;
   border: 1px solid #ffc107;
-  border-radius: 5px;
+  border-radius: 8px;
   color: #856404;
+  font-size: 0.85rem;
 }
 
 .seccion-cercanas {
-  margin-top: 30px;
-  padding-top: 30px;
+  margin-top: 20px;
+  padding-top: 20px;
   border-top: 2px dashed #ddd;
 
   .seccion-cercanas-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 
     h3 {
-      margin: 0 0 8px 0;
-      font-size: 1.4rem;
+      margin: 0 0 6px 0;
+      font-size: 1.1rem;
       color: #2c3e50;
     }
 
     .seccion-cercanas-subtitulo {
       margin: 0;
       color: #666;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
 
       strong {
         color: #667eea;
@@ -211,33 +227,33 @@
   }
 
   .grupo-localidad-cercana {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.04) 0%, rgba(118, 75, 162, 0.04) 100%);
     border: 1px solid rgba(102, 126, 234, 0.2);
-    border-radius: 12px;
-    padding: 16px;
+    border-radius: 10px;
+    padding: 12px;
 
     .grupo-localidad-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
       border-bottom: 1px solid rgba(102, 126, 234, 0.15);
     }
 
     .grupo-localidad-nombre {
-      font-size: 1.15rem;
+      font-size: 1rem;
       font-weight: 700;
       color: #2c3e50;
     }
 
     .grupo-localidad-distancia {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: #667eea;
       background: rgba(102, 126, 234, 0.1);
-      padding: 4px 12px;
+      padding: 3px 10px;
       border-radius: 20px;
     }
   }
@@ -245,18 +261,33 @@
 
 .contador-progresivo {
   text-align: center;
-  margin: 0 0 16px;
-  font-size: 0.95rem;
+  margin: 0 0 12px;
+  font-size: 0.85rem;
   color: #555;
 }
 
-@media (max-width: 768px) {
+/* Tablet+ : 2 columnas */
+@media (min-width: 768px) {
+  .contenido-scrollable {
+    padding: 20px;
+  }
+
   .grid-gasolineras {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
 
   .header-lista {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 16px 20px;
+
+    h2 {
+      font-size: 1.3rem;
+    }
+
+    .botones-header button {
+      font-size: 0.9rem;
+      padding: 10px 20px;
+    }
   }
 }

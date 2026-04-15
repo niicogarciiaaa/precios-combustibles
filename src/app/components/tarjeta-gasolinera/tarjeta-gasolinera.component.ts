@@ -12,6 +12,8 @@ export class TarjetaGasolineraComponent {
   @Input() gasolinera!: GasolineraSimplificada;
   @Input() combustibleDestacado: keyof GasolineraSimplificada['precios'] = 'diesel';
   @Input() esFavorito = false;
+  @Input() litrosRepostar = 0; // 0 = no mostrar info de coste
+  @Input() precioMedio = 0;    // precio medio del combustible seleccionado
 
   mostrarDetalles = false;
 
@@ -32,5 +34,19 @@ export class TarjetaGasolineraComponent {
 
   toggleFavorito(): void {
     this.favoritosService.toggleFavorito(this.gasolinera);
+  }
+
+  get costeTotal(): number | null {
+    if (this.litrosRepostar <= 0) return null;
+    const precio = this.obtenerPrecioDestacado();
+    if (!precio) return null;
+    return precio * this.litrosRepostar;
+  }
+
+  get ahorroVsMedia(): number | null {
+    if (this.litrosRepostar <= 0 || this.precioMedio <= 0) return null;
+    const precio = this.obtenerPrecioDestacado();
+    if (!precio) return null;
+    return (this.precioMedio - precio) * this.litrosRepostar;
   }
 }

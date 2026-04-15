@@ -1,0 +1,169 @@
+<div class="calculadora-container">
+  <button class="toggle-calculadora" (click)="togglePanel()" [class.abierto]="panelAbierto">
+    🧮 Calculadora de ahorro
+    <span class="toggle-icono">{{ panelAbierto ? '▲' : '▼' }}</span>
+  </button>
+
+  <div class="panel-calculadora" *ngIf="panelAbierto">
+    <div class="config-grid">
+      <div class="config-item">
+        <label for="litros">⛽ Litros a repostar:</label>
+        <div class="input-con-unidad">
+          <input
+            type="number"
+            id="litros"
+            [(ngModel)]="litros"
+            (input)="onConfigChange()"
+            min="1"
+            max="200"
+            step="5">
+          <span class="unidad">L</span>
+        </div>
+      </div>
+
+      <div class="config-item">
+        <label for="consumo">🚗 Consumo del vehículo:</label>
+        <div class="input-con-unidad">
+          <input
+            type="number"
+            id="consumo"
+            [(ngModel)]="consumo"
+            (input)="onConfigChange()"
+            min="1"
+            max="50"
+            step="0.5">
+          <span class="unidad">L/100km</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparación más cercana vs más barata cerca -->
+    <div class="comparacion" *ngIf="comparacion && comparacion.masCercana && comparacion.masBarataCerca && comparacion.masCercana.id !== comparacion.masBarataCerca.id">
+      <h4>📊 ¿Merece la pena ir más lejos? <span class="combustible-tag">{{ nombresCombustibles[tipoCombustible] }}</span></h4>
+
+      <div class="comparacion-cards">
+        <div class="card-comparacion card-cercana">
+          <div class="card-etiqueta">📍 Más cercana</div>
+          <div class="card-nombre">{{ comparacion.masCercana.nombre }}</div>
+          <div class="card-precio">{{ obtenerPrecio(comparacion.masCercana) | precios }} €/L</div>
+          <div class="card-coste-total">
+            <span class="coste-label">Repostaje {{ litros }}L:</span>
+            <span class="coste-valor">{{ comparacion.costeCercana | number:'1.2-2' }} €</span>
+          </div>
+          <div class="card-distancia" *ngIf="comparacion.masCercana.distancia !== undefined">
+            📍 A {{ comparacion.masCercana.distancia | number:'1.1-1' }} km
+          </div>
+        </div>
+
+        <div class="card-vs">VS</div>
+
+        <div class="card-comparacion card-barata">
+          <div class="card-etiqueta">💰 Más barata cerca</div>
+          <div class="card-nombre">{{ comparacion.masBarataCerca.nombre }}</div>
+          <div class="card-precio">{{ obtenerPrecio(comparacion.masBarataCerca) | precios }} €/L</div>
+          <div class="card-coste-total">
+            <span class="coste-label">Repostaje {{ litros }}L:</span>
+            <span class="coste-valor">{{ comparacion.costeBarataCerca | number:'1.2-2' }} €</span>
+          </div>
+          <div class="card-distancia" *ngIf="comparacion.masBarataCerca.distancia !== undefined">
+            📍 A {{ comparacion.masBarataCerca.distancia | number:'1.1-1' }} km
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultado del ahorro -->
+      <div class="resultado-ahorro" [class.positivo]="comparacion.ahorroNeto > 0" [class.negativo]="comparacion.ahorroNeto <= 0">
+        <div class="ahorro-principal" *ngIf="comparacion.ahorroNeto > 0.01">
+          <span class="ahorro-icono">✅</span>
+          <div class="ahorro-texto">
+            <strong>Ahorras {{ comparacion.ahorroNeto | number:'1.2-2' }} €</strong>
+            <span>yendo a <em>{{ comparacion.masBarataCerca.nombre }}</em> ({{ comparacion.distanciaExtra | number:'1.1-1' }} km más)</span>
+          </div>
+        </div>
+
+        <div class="ahorro-principal" *ngIf="comparacion.ahorroNeto <= 0.01 && comparacion.ahorroNeto >= -0.01">
+          <span class="ahorro-icono">⚖️</span>
+          <div class="ahorro-texto">
+            <strong>No hay diferencia significativa</strong>
+            <span>Reposta en la más cercana, el ahorro no compensa</span>
+          </div>
+        </div>
+
+        <div class="ahorro-principal" *ngIf="comparacion.ahorroNeto < -0.01">
+          <span class="ahorro-icono">⚠️</span>
+          <div class="ahorro-texto">
+            <strong>No compensa desplazarse</strong>
+            <span>Gastas {{ (comparacion.ahorroNeto * -1) | number:'1.2-2' }} € más en gasolina de lo que ahorrarías</span>
+          </div>
+        </div>
+
+        <div class="ahorro-desglose" *ngIf="comparacion.distanciaExtra > 0">
+          <div class="desglose-item">
+            <span>Distancia extra:</span>
+            <strong>+{{ comparacion.distanciaExtra | number:'1.1-1' }} km</strong>
+          </div>
+          <div class="desglose-item">
+            <span>Combustible extra (ida+vuelta):</span>
+            <strong>-{{ comparacion.costeCombustibleExtra | number:'1.2-2' }} €</strong>
+          </div>
+          <div class="desglose-item">
+            <span>Ahorro bruto en repostaje:</span>
+            <strong>+{{ (comparacion.costeCercana - comparacion.costeBarataCerca) | number:'1.2-2' }} €</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sin ubicación: comparación más barata vs más cara del listado -->
+    <div class="comparacion" *ngIf="comparacion && !tieneUbicacion && comparacion.masCercana && comparacion.masBarataCerca && comparacion.masCercana.id !== comparacion.masBarataCerca.id">
+      <h4>📊 Diferencia de precio en tu zona <span class="combustible-tag">{{ nombresCombustibles[tipoCombustible] }}</span></h4>
+
+      <div class="comparacion-cards">
+        <div class="card-comparacion card-barata">
+          <div class="card-etiqueta">💰 Más barata</div>
+          <div class="card-nombre">{{ comparacion.masBarataCerca.nombre }}</div>
+          <div class="card-precio">{{ obtenerPrecio(comparacion.masBarataCerca) | precios }} €/L</div>
+          <div class="card-coste-total">
+            <span class="coste-label">Repostaje {{ litros }}L:</span>
+            <span class="coste-valor">{{ comparacion.costeBarataCerca | number:'1.2-2' }} €</span>
+          </div>
+        </div>
+
+        <div class="card-vs">VS</div>
+
+        <div class="card-comparacion card-cercana">
+          <div class="card-etiqueta">💸 Más cara</div>
+          <div class="card-nombre">{{ comparacion.masCercana.nombre }}</div>
+          <div class="card-precio">{{ obtenerPrecio(comparacion.masCercana) | precios }} €/L</div>
+          <div class="card-coste-total">
+            <span class="coste-label">Repostaje {{ litros }}L:</span>
+            <span class="coste-valor">{{ comparacion.costeCercana | number:'1.2-2' }} €</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="resultado-ahorro positivo" *ngIf="comparacion.ahorroNeto > 0.01">
+        <div class="ahorro-principal">
+          <span class="ahorro-icono">💡</span>
+          <div class="ahorro-texto">
+            <strong>Diferencia: {{ comparacion.ahorroNeto | number:'1.2-2' }} €</strong>
+            <span>en {{ litros }}L entre la más barata y la más cara del listado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Misma gasolinera o sin comparación posible -->
+    <div class="info-media" *ngIf="comparacion && comparacion.precioMedio > 0 && (!comparacion.masCercana || !comparacion.masBarataCerca || comparacion.masCercana.id === comparacion.masBarataCerca.id)">
+      <p>
+        📊 Precio medio {{ nombresCombustibles[tipoCombustible] }}:
+        <strong>{{ comparacion.precioMedio | precios }} €/L</strong>
+        → Repostaje {{ litros }}L:
+        <strong>{{ (comparacion.precioMedio * litros) | number:'1.2-2' }} €</strong>
+      </p>
+      <p *ngIf="comparacion.masCercana && comparacion.masCercana.id === comparacion.masBarataCerca?.id" class="info-misma">
+        ✅ ¡Tu gasolinera más cercana ya es la más barata de la zona!
+      </p>
+    </div>
+  </div>
+</div>

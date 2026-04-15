@@ -3,6 +3,7 @@ import { Subject, Subscription, takeUntil } from 'rxjs';
 import { GasolinerasService } from '../../services/gasolineras.service';
 import { FavoritosService } from '../../services/favoritos.service';
 import { GasolineraSimplificada, ProvinciaMiteco, TipoCombustible } from '../../models/gasolinera.model';
+import { ConfigAhorro } from '../calculadora-ahorro/calculadora-ahorro.component';
 
 const MAX_RESULTADOS_VISIBLES = 50;
 const RADIO_CERCANAS_KM = 20; // Radio para buscar localidades cercanas
@@ -21,7 +22,7 @@ export interface GrupoLocalidadCercana {
 })
 export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   gasolineras: GasolineraSimplificada[] = [];
-  private gasolinerasCompletas: GasolineraSimplificada[] = [];
+  gasolinerasCompletas: GasolineraSimplificada[] = [];
   private provinciasMiteco: ProvinciaMiteco[] = [];
   private provinciasPorNombre = new Map<string, string>();
   gasolinerasFiltradas: GasolineraSimplificada[] = [];
@@ -43,6 +44,11 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
   gasolinerasCargadas = 0;
   cargandoEnSegundoPlano = false;
   readonly maxResultadosVisibles = MAX_RESULTADOS_VISIBLES;
+
+  // Calculadora de ahorro
+  litrosRepostar = 0;
+  consumoVehiculo = 7;
+  precioMedioCombustible = 0;
   
   filtros = {
     provincia: '',
@@ -347,6 +353,7 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
     this.totalResultados = totalCoincidencias;
     this.gasolinerasFiltradas = resultado;
+    this.recalcularPrecioMedio();
 
     // Buscar localidades cercanas si hay filtro de localidad
     if (localidadFiltro) {
@@ -710,5 +717,22 @@ export class ListaGasolinerasComponent implements OnInit, OnDestroy {
 
   trackByFn(index: number, item: GasolineraSimplificada): string {
     return item.id;
+  }
+
+  onConfigAhorroChange(config: ConfigAhorro): void {
+    this.litrosRepostar = config.litros;
+    this.consumoVehiculo = config.consumo;
+    this.recalcularPrecioMedio();
+  }
+
+  private recalcularPrecioMedio(): void {
+    const tipo = this.filtros.tipoCombustible as keyof GasolineraSimplificada['precios'];
+    const conPrecio = this.gasolinerasCompletas.filter(g => g.precios[tipo] && g.precios[tipo]! > 0);
+    if (conPrecio.length > 0) {
+      const suma = conPrecio.reduce((acc, g) => acc + (g.precios[tipo] ?? 0), 0);
+      this.precioMedioCombustible = suma / conPrecio.length;
+    } else {
+      this.precioMedioCombustible = 0;
+    }
   }
 }

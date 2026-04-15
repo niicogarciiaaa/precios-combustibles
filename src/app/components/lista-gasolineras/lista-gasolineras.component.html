@@ -25,6 +25,15 @@
   </div>
 
   <div class="contenido-scrollable">
+    <!-- Calculadora de ahorro -->
+    <app-calculadora-ahorro
+      [gasolineras]="gasolinerasFiltradas"
+      [todasGasolineras]="gasolinerasCompletas"
+      [tipoCombustible]="filtros.tipoCombustible"
+      [tieneUbicacion]="ubicacionUsuario !== null"
+      (configChange)="onConfigAhorroChange($event)">
+    </app-calculadora-ahorro>
+
     <div *ngIf="loading" class="loading">
       <div class="spinner"></div>
       <p>Cargando gasolineras…</p>
@@ -51,7 +60,9 @@
             *ngFor="let gasolinera of favoritos; trackBy: trackByFn"
             [gasolinera]="gasolinera"
             [combustibleDestacado]="filtros.tipoCombustible"
-            [esFavorito]="true">
+            [esFavorito]="true"
+            [litrosRepostar]="litrosRepostar"
+            [precioMedio]="precioMedioCombustible">
           </app-tarjeta-gasolinera>
         </div>
         <button class="btn-limpiar-favoritos" 
@@ -75,7 +86,9 @@
             *ngFor="let gasolinera of gasolinerasFiltradas; trackBy: trackByFn"
             [gasolinera]="gasolinera"
             [combustibleDestacado]="filtros.tipoCombustible"
-            [esFavorito]="favoritosIdSet.has(gasolinera.id)">
+            [esFavorito]="favoritosIdSet.has(gasolinera.id)"
+            [litrosRepostar]="litrosRepostar"
+            [precioMedio]="precioMedioCombustible">
           </app-tarjeta-gasolinera>
         </div>
 
@@ -98,7 +111,9 @@
                 *ngFor="let gasolinera of grupo.gasolineras; trackBy: trackByFn"
                 [gasolinera]="gasolinera"
                 [combustibleDestacado]="filtros.tipoCombustible"
-                [esFavorito]="favoritosIdSet.has(gasolinera.id)">
+                [esFavorito]="favoritosIdSet.has(gasolinera.id)"
+                [litrosRepostar]="litrosRepostar"
+                [precioMedio]="precioMedioCombustible">
               </app-tarjeta-gasolinera>
             </div>
           </div>

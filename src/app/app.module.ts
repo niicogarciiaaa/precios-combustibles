@@ -8,6 +8,7 @@ import { AppComponent } from './app.component';
 import { ListaGasolinerasComponent } from './components/lista-gasolineras/lista-gasolineras.component';
 import { TarjetaGasolineraComponent } from './components/tarjeta-gasolinera/tarjeta-gasolinera.component';
 import { FiltrosComponent } from './components/filtros/filtros.component';
+import { CalculadoraAhorroComponent } from './components/calculadora-ahorro/calculadora-ahorro.component';
 import { PreciosPipe } from './pipes/precios.pipe';
 import { ServiceWorkerModule } from '@angular/service-worker';
 
@@ -17,6 +18,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     ListaGasolinerasComponent,
     TarjetaGasolineraComponent,
     FiltrosComponent,
+    CalculadoraAhorroComponent,
     PreciosPipe
   ],
   imports: [
