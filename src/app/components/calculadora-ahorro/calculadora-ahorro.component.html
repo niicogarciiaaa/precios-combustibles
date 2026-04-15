@@ -1,10 +1,15 @@
 <div class="calculadora-container">
-  <button class="toggle-calculadora" (click)="togglePanel()" [class.abierto]="panelAbierto">
+  <button class="toggle-calculadora" 
+          (click)="togglePanel()" 
+          [class.abierto]="panelAbierto"
+          [attr.aria-expanded]="panelAbierto"
+          aria-controls="panel-calculadora"
+          aria-label="Abrir o cerrar calculadora de ahorro">
     🧮 Calculadora de ahorro
-    <span class="toggle-icono">{{ panelAbierto ? '▲' : '▼' }}</span>
+    <span class="toggle-icono" aria-hidden="true">{{ panelAbierto ? '▲' : '▼' }}</span>
   </button>
 
-  <div class="panel-calculadora" *ngIf="panelAbierto">
+  <div class="panel-calculadora" id="panel-calculadora" *ngIf="panelAbierto" role="region" aria-label="Calculadora de ahorro">
     <div class="config-grid">
       <div class="config-item">
         <label for="litros">⛽ Litros a repostar:</label>

@@ -1,4 +1,4 @@
-<div class="filtros-container">
+<div class="filtros-container" role="search" aria-label="Filtros de gasolineras">
   <h3>🔍 Filtrar gasolineras</h3>
   
   <div class="filtros-grid">
@@ -52,10 +52,15 @@
     </div>
 
     <div class="filtro-item btn-container">
-      <button class="btn-cercanas" (click)="onBuscarCercanas()" [disabled]="buscandoUbicacion">
+      <button class="btn-cercanas" 
+              (click)="onBuscarCercanas()" 
+              [disabled]="buscandoUbicacion"
+              aria-label="Buscar gasolineras cercanas a mi ubicación">
         📍 {{ buscandoUbicacion ? 'Obteniendo ubicación...' : 'Buscar cercanas' }}
       </button>
-      <button class="btn-limpiar" (click)="limpiarFiltros()">
+      <button class="btn-limpiar" 
+              (click)="limpiarFiltros()"
+              aria-label="Limpiar todos los filtros">
         🗑️ Limpiar filtros
       </button>
     </div>

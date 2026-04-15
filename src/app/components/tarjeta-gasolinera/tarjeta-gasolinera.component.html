@@ -1,11 +1,12 @@
-<div class="tarjeta-gasolinera">
+<article class="tarjeta-gasolinera" [attr.aria-label]="gasolinera.nombre + ' - ' + (obtenerPrecioDestacado() | precios) + ' euros por litro'">
   <div class="header-tarjeta">
     <div class="nombre-favorito">
       <h3 class="nombre">{{ gasolinera.nombre || 'Sin nombre' }}</h3>
       <button class="btn-favorito" 
               [class.favorito]="esFavorito"
               (click)="toggleFavorito()"
-              [title]="esFavorito ? 'Eliminar de favoritos' : 'Agregar a favoritos'">
+              [attr.aria-label]="esFavorito ? 'Eliminar ' + gasolinera.nombre + ' de favoritos' : 'Agregar ' + gasolinera.nombre + ' a favoritos'"
+              [attr.aria-pressed]="esFavorito">
         {{ esFavorito ? '★' : '☆' }}
       </button>
     </div>
@@ -37,10 +38,16 @@
   </div>
 
   <div class="acciones">
-    <button class="btn-detalles" (click)="toggleDetalles()">
+    <button class="btn-detalles" 
+            (click)="toggleDetalles()"
+            [attr.aria-expanded]="mostrarDetalles"
+            aria-controls="detalles-panel"
+            [attr.aria-label]="(mostrarDetalles ? 'Ocultar' : 'Ver') + ' detalles de ' + gasolinera.nombre">
       {{ mostrarDetalles ? '▲ Ocultar' : '▼ Ver más' }} detalles
     </button>
-    <button class="btn-maps" (click)="abrirMaps()">
+    <button class="btn-maps" 
+            (click)="abrirMaps()"
+            [attr.aria-label]="'Abrir ' + gasolinera.nombre + ' en Google Maps'">
       🗺️ Mapa
     </button>
   </div>
@@ -89,4 +96,4 @@
       </div>
     </div>
   </div>
-</div>
+</article>

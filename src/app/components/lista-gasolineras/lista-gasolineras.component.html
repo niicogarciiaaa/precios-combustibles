@@ -14,10 +14,15 @@
       <div class="botones-header">
         <button class="btn-secondary" 
                 (click)="mostrarFavoritos = !mostrarFavoritos"
-                [class.activo]="mostrarFavoritos">
+                [class.activo]="mostrarFavoritos"
+                [attr.aria-pressed]="mostrarFavoritos"
+                [attr.aria-label]="'Mostrar favoritos, ' + numeroFavoritos + ' guardados'">
           ★ Favoritos ({{ numeroFavoritos }})
         </button>
-        <button class="btn-primary" (click)="refrescar()" [disabled]="loading">
+        <button class="btn-primary" 
+                (click)="refrescar()" 
+                [disabled]="loading"
+                aria-label="Actualizar datos de gasolineras">
           🔄 {{ loading ? 'Cargando...' : 'Actualizar' }}
         </button>
       </div>
@@ -34,8 +39,8 @@
       (configChange)="onConfigAhorroChange($event)">
     </app-calculadora-ahorro>
 
-    <div *ngIf="loading" class="loading">
-      <div class="spinner"></div>
+    <div *ngIf="loading" class="loading" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
       <p>Cargando gasolineras…</p>
     </div>
 
@@ -45,7 +50,7 @@
       <p>Elige una provincia en los filtros de arriba para ver las gasolineras más baratas, o pulsa <strong>📍 Buscar cercanas</strong> para encontrar las más próximas a ti.</p>
     </div>
 
-    <div *ngIf="error && !loading" class="error">
+    <div *ngIf="error && !loading" class="error" role="alert">
       {{ error }}
     </div>
 
@@ -67,13 +72,14 @@
         </div>
         <button class="btn-limpiar-favoritos" 
                 (click)="limpiarFavoritos()"
-                *ngIf="favoritos.length > 0">
+                *ngIf="favoritos.length > 0"
+                aria-label="Eliminar todos los favoritos">
           🗑️ Limpiar favoritos
         </button>
       </div>
 
       <div *ngIf="!mostrarFavoritos">
-        <p class="contador">
+        <p class="contador" aria-live="polite">
           Se encontraron <strong>{{ totalResultados }}</strong> gasolineras
         </p>
 
