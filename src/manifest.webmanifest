@@ -1,9 +1,13 @@
 {
-  "name": "precios-combustibles",
-  "short_name": "precios-combustibles",
-  "theme_color": "#1976d2",
-  "background_color": "#fafafa",
+  "name": "Precios Combustibles España",
+  "short_name": "Combustibles",
+  "description": "Compara precios de gasolina y diésel en todas las gasolineras de España. Datos oficiales del MITECO en tiempo real.",
+  "lang": "es-ES",
+  "categories": ["utilities", "finance"],
+  "theme_color": "#667eea",
+  "background_color": "#f0f2f5",
   "display": "standalone",
+  "orientation": "any",
   "scope": "./",
   "start_url": "./",
   "icons": [

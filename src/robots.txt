@@ -1,0 +1,9 @@
+# robots.txt — Precios Combustibles España
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://niicogarciiaaa.github.io/precios-combustibles/sitemap.xml
+
+# Bloquear recursos innecesarios para crawlers
+Disallow: /assets/icons/
